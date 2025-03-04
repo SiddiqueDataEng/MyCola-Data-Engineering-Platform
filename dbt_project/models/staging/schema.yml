@@ -1,0 +1,30 @@
+version: 2
+
+models:
+  - name: stg_sales_orders
+    description: "Cleaned and typed sales orders from fact_sales_order"
+    columns:
+      - name: order_id
+        description: "Unique order identifier"
+        tests:
+          - not_null
+      - name: order_date
+        tests:
+          - not_null
+      - name: territory_id
+        tests:
+          - not_null
+
+  - name: stg_inventory
+    description: "Cleaned inventory movements"
+    columns:
+      - name: movement_id
+        tests:
+          - not_null
+
+  - name: stg_production
+    description: "Cleaned production run records"
+    columns:
+      - name: run_id
+        tests:
+          - not_null

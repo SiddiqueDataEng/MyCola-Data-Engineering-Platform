@@ -1,0 +1,723 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MyCola Analytics Platform v2</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root{--bg:#080b14;--card:rgba(255,255,255,0.04);--border:rgba(255,255,255,0.08);--text:#e2e8f0;--muted:#64748b;
+--c1:#00d4ff;--c2:#ff6b6b;--c3:#ffd93d;--c4:#6bcb77;--c5:#845ef7;--c6:#ff922b;--c7:#20c997;--c8:#f06595;}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh}
+
+header{background:linear-gradient(135deg,#0f0a2e 0%,#0a1628 50%,#021a14 100%);
+border-bottom:1px solid var(--border);padding:0 1.5rem;display:flex;align-items:center;
+justify-content:space-between;height:58px;position:sticky;top:0;z-index:200}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-mark{width:34px;height:34px;border-radius:9px;
+background:linear-gradient(135deg,var(--c1),var(--c5));
+display:flex;align-items:center;justify-content:center;font-weight:900;font-size:15px;color:#fff;
+box-shadow:0 0 20px rgba(0,212,255,.3)}
+.logo h1{font-size:1.1rem;font-weight:700}
+.logo span{color:var(--c1)}
+.hdr-right{display:flex;align-items:center;gap:14px}
+.dot-wrap{display:flex;align-items:center;gap:5px;font-size:.75rem;color:var(--muted)}
+.dot{width:7px;height:7px;border-radius:50%;background:#ef4444;animation:pulse 2s infinite}
+.dot.ok{background:var(--c4)}
+.dot.warn{background:var(--c3)}
+.hdr-btn{background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.25);
+color:var(--c1);padding:5px 12px;border-radius:7px;cursor:pointer;font-size:.78rem;transition:.2s}
+.hdr-btn:hover{background:rgba(0,212,255,.2)}
+.time-badge{font-size:.72rem;color:var(--muted)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--border);background:rgba(0,0,0,.4);
+padding:0 1.5rem;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:12px 18px;cursor:pointer;font-size:.82rem;font-weight:500;color:var(--muted);
+border-bottom:2px solid transparent;transition:.2s;white-space:nowrap;display:flex;align-items:center;gap:6px}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--c1);border-bottom-color:var(--c1)}
+
+.page{display:none;padding:1.5rem;animation:fadein .25s ease}
+.page.active{display:block}
+@keyframes fadein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:.9rem;margin-bottom:1.25rem}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.1rem 1.3rem;
+transition:.2s;cursor:default;position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent,var(--c1))}
+.kpi:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(0,0,0,.4);border-color:rgba(255,255,255,.13)}
+.kpi-lbl{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:.4rem}
+.kpi-val{font-size:1.65rem;font-weight:700;line-height:1}
+.kpi-sub{font-size:.7rem;color:var(--muted);margin-top:.35rem}
+.kpi-ico{position:absolute;right:1rem;top:50%;transform:translateY(-50%);font-size:2rem;opacity:.12}
+
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.25rem}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.25rem;margin-bottom:1.25rem}
+.gf{display:grid;grid-template-columns:1fr;gap:1.25rem;margin-bottom:1.25rem}
+.g21{display:grid;grid-template-columns:2fr 1fr;gap:1.25rem;margin-bottom:1.25rem}
+
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.1rem}
+.card:hover{border-color:rgba(255,255,255,.12)}
+.card-title{font-size:.82rem;font-weight:600;margin-bottom:.2rem}
+.card-sub{font-size:.7rem;color:var(--muted);margin-bottom:.9rem}
+.ch{position:relative}
+.ch canvas{display:block}
+
+.spin-wrap{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:var(--muted);min-height:160px}
+.spin{width:28px;height:28px;border:2.5px solid rgba(255,255,255,.08);border-top-color:var(--c1);
+border-radius:50%;animation:sp .65s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.err-wrap{display:flex;align-items:center;justify-content:center;min-height:140px;color:var(--c2);font-size:.82rem;flex-direction:column;gap:6px}
+
+table{width:100%;border-collapse:collapse;font-size:.8rem}
+thead th{padding:9px 12px;text-align:left;color:var(--muted);font-size:.7rem;text-transform:uppercase;
+letter-spacing:.6px;border-bottom:1px solid var(--border);cursor:pointer;user-select:none;white-space:nowrap}
+thead th:hover{color:var(--c1)}
+tbody td{padding:9px 12px;border-bottom:1px solid rgba(255,255,255,.03)}
+tbody tr:hover td{background:rgba(255,255,255,.025)}
+tbody tr:last-child td{border-bottom:none}
+.tscroll{max-height:340px;overflow-y:auto}
+.tscroll::-webkit-scrollbar{width:4px}
+.tscroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:2px}
+.badge{display:inline-block;padding:2px 7px;border-radius:20px;font-size:.68rem;font-weight:600;
+background:rgba(0,212,255,.12);color:var(--c1)}
+.badge.g{background:rgba(107,203,119,.12);color:var(--c4)}
+.badge.y{background:rgba(255,217,61,.12);color:var(--c3)}
+.badge.r{background:rgba(255,107,107,.12);color:var(--c2)}
+.badge.p{background:rgba(132,94,247,.12);color:var(--c5)}
+.pbar{height:5px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden}
+.pfill{height:100%;border-radius:3px;transition:.5s ease}
+.rank{color:var(--c1);font-weight:700}
+
+/* Live feed */
+#live-feed{height:300px;overflow-y:auto;font-size:.75rem;font-family:monospace}
+#live-feed::-webkit-scrollbar{width:4px}
+#live-feed::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:2px}
+.event-row{padding:4px 8px;border-bottom:1px solid rgba(255,255,255,.03);display:flex;gap:10px;align-items:center}
+.event-row:hover{background:rgba(255,255,255,.03)}
+.ev-time{color:var(--muted);flex-shrink:0;width:62px}
+.ev-topic{padding:1px 6px;border-radius:10px;font-size:.68rem;flex-shrink:0}
+.ev-sales{background:rgba(0,212,255,.12);color:var(--c1)}
+.ev-inv{background:rgba(107,203,119,.12);color:var(--c4)}
+.ev-click{background:rgba(132,94,247,.12);color:var(--c5)}
+.ev-prod{background:rgba(255,146,43,.12);color:var(--c6)}
+.ev-gl{background:rgba(255,217,61,.12);color:var(--c3)}
+.ev-data{color:#94a3b8;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Pipeline status */
+.pipeline-step{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.pipeline-step:last-child{border-bottom:none}
+.step-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0}
+.step-info{flex:1}
+.step-name{font-size:.83rem;font-weight:600}
+.step-desc{font-size:.72rem;color:var(--muted);margin-top:2px}
+.step-status{font-size:.72rem;font-weight:600;flex-shrink:0}
+
+/* Kafka lag bar */
+.lag-item{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.lag-topic{font-size:.78rem;color:var(--text);flex-shrink:0;width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lag-bar-wrap{flex:1}
+.lag-num{font-size:.75rem;font-weight:600;flex-shrink:0;width:50px;text-align:right}
+
+@media(max-width:900px){.g2,.g3,.g21{grid-template-columns:1fr}.kpi-grid{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">
+    <div class="logo-mark">M</div>
+    <h1>My<span>Cola</span> <span style="color:#94a3b8;font-weight:400;font-size:.85rem">Analytics Platform</span></h1>
+  </div>
+  <div class="hdr-right">
+    <div class="dot-wrap"><div class="dot" id="chDot"></div><span id="chTxt">ClickHouse</span></div>
+    <div class="dot-wrap"><div class="dot" id="kDot"></div><span id="kTxt">Kafka</span></div>
+    <div class="dot-wrap"><div class="dot" id="afDot"></div><span id="afTxt">Airflow</span></div>
+    <span class="time-badge" id="tsLabel"></span>
+    <button class="hdr-btn" onclick="refreshAll()">⟳ Refresh</button>
+  </div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" onclick="showTab('exec')">📊 Executive</div>
+  <div class="tab" onclick="showTab('sales')">💹 Sales</div>
+  <div class="tab" onclick="showTab('ops')">🏭 Production</div>
+  <div class="tab" onclick="showTab('fin')">💰 Finance</div>
+  <div class="tab" onclick="showTab('kafka')">⚡ Live Stream</div>
+  <div class="tab" onclick="showTab('pipeline')">🔄 Pipeline</div>
+</div>
+
+<!-- ═══ EXEC TAB ═══════════════════════════════════════════════ -->
+<div class="page active" id="page-exec">
+  <div class="kpi-grid">
+    <div class="kpi" style="--accent:var(--c1)"><div class="kpi-lbl">Revenue YTD (PKR)</div><div class="kpi-val" id="kv-rev">—</div><div class="kpi-sub" id="kv-rev-s">2025</div><div class="kpi-ico">💰</div></div>
+    <div class="kpi" style="--accent:var(--c4)"><div class="kpi-lbl">Confirmed Orders YTD</div><div class="kpi-val" id="kv-ord">—</div><div class="kpi-sub" id="kv-ord-s">all territories</div><div class="kpi-ico">📦</div></div>
+    <div class="kpi" style="--accent:var(--c3)"><div class="kpi-lbl">Avg Order Value</div><div class="kpi-val" id="kv-aov">—</div><div class="kpi-sub">PKR per order</div><div class="kpi-ico">📈</div></div>
+    <div class="kpi" style="--accent:var(--c5)"><div class="kpi-lbl">Top Territory</div><div class="kpi-val" id="kv-ter">—</div><div class="kpi-sub" id="kv-ter-s">highest revenue</div><div class="kpi-ico">🏆</div></div>
+    <div class="kpi" style="--accent:var(--c7)"><div class="kpi-lbl">Kafka Events (Live)</div><div class="kpi-val" id="kv-kevt">—</div><div class="kpi-sub">staging_db.kafka_events</div><div class="kpi-ico">⚡</div></div>
+    <div class="kpi" style="--accent:var(--c6)"><div class="kpi-lbl">Pipeline Runs</div><div class="kpi-val" id="kv-runs">—</div><div class="kpi-sub">Airflow successes</div><div class="kpi-ico">🔄</div></div>
+  </div>
+  <div class="gf">
+    <div class="card"><div class="card-title">Monthly Revenue Trend</div><div class="card-sub">All territories · last 24 months · confirmed + total</div>
+    <div class="ch" style="height:240px"><div class="spin-wrap" id="l-revt"><div class="spin"></div><span>Loading…</span></div><canvas id="c-revt" style="display:none"></canvas></div></div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="card-title">Orders by Territory · Monthly</div><div class="card-sub">Stacked · last 12 months</div>
+    <div class="ch" style="height:260px"><div class="spin-wrap" id="l-oter"><div class="spin"></div></div><canvas id="c-oter" style="display:none"></canvas></div></div>
+    <div class="card"><div class="card-title">Revenue Share by Territory</div><div class="card-sub">All-time confirmed revenue</div>
+    <div class="ch" style="height:260px"><div class="spin-wrap" id="l-rshare"><div class="spin"></div></div><canvas id="c-rshare" style="display:none"></canvas></div></div>
+  </div>
+</div>
+
+<!-- ═══ SALES TAB ════════════════════════════════════════════════ -->
+<div class="page" id="page-sales">
+  <div class="g21">
+    <div class="card"><div class="card-title">Top 15 Sales Reps by Revenue</div><div class="card-sub">All-time confirmed · hover for territory</div>
+    <div class="ch" style="height:360px"><div class="spin-wrap" id="l-reps"><div class="spin"></div></div><canvas id="c-reps" style="display:none"></canvas></div></div>
+    <div class="card"><div class="card-title">Latest Month: Confirmed vs Pending</div><div class="card-sub">By territory</div>
+    <div class="ch" style="height:360px"><div class="spin-wrap" id="l-cpend"><div class="spin"></div></div><canvas id="c-cpend" style="display:none"></canvas></div></div>
+  </div>
+  <div class="gf">
+    <div class="card"><div class="card-title">Monthly Orders by Territory</div><div class="card-sub">Last 12 months · multi-line</div>
+    <div class="ch" style="height:220px"><div class="spin-wrap" id="l-tlines"><div class="spin"></div></div><canvas id="c-tlines" style="display:none"></canvas></div></div>
+  </div>
+  <div class="card"><div class="card-title">Sales Rep Leaderboard</div><div class="card-sub">Click headers to sort</div>
+  <div class="tscroll"><div class="spin-wrap" id="l-ltbl"><div class="spin"></div></div>
+  <table id="t-reps" style="display:none"><thead><tr><th onclick="srt(this,0)">#</th><th onclick="srt(this,1)">Name</th><th onclick="srt(this,2)">Territory</th><th onclick="srt(this,3)">Orders</th><th onclick="srt(this,4)">Revenue</th><th onclick="srt(this,5)">Avg OV</th><th>Share</th></tr></thead><tbody id="tb-reps"></tbody></table>
+  </div></div>
+</div>
+
+<!-- ═══ OPS TAB ══════════════════════════════════════════════════ -->
+<div class="page" id="page-ops">
+  <div class="kpi-grid">
+    <div class="kpi" style="--accent:var(--c7)"><div class="kpi-lbl">Avg OEE</div><div class="kpi-val" id="kv-oee">—</div><div class="kpi-sub">All lines</div><div class="kpi-ico">⚙️</div></div>
+    <div class="kpi" style="--accent:var(--c4)"><div class="kpi-lbl">Good Units</div><div class="kpi-val" id="kv-good">—</div><div class="kpi-sub">All-time</div><div class="kpi-ico">✅</div></div>
+    <div class="kpi" style="--accent:var(--c2)"><div class="kpi-lbl">Defective Units</div><div class="kpi-val" id="kv-def">—</div><div class="kpi-sub">All-time</div><div class="kpi-ico">⚠️</div></div>
+    <div class="kpi" style="--accent:var(--c3)"><div class="kpi-lbl">Avg Efficiency</div><div class="kpi-val" id="kv-eff">—</div><div class="kpi-sub">All lines</div><div class="kpi-ico">🏭</div></div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="card-title">Line Performance Radar</div><div class="card-sub">OEE · Efficiency · Quality — top 6 lines</div>
+    <div class="ch" style="height:300px"><div class="spin-wrap" id="l-radar"><div class="spin"></div></div><canvas id="c-radar" style="display:none"></canvas></div></div>
+    <div class="card"><div class="card-title">Planned vs Actual vs Good Units</div><div class="card-sub">By production line</div>
+    <div class="ch" style="height:300px"><div class="spin-wrap" id="l-pvsa"><div class="spin"></div></div><canvas id="c-pvsa" style="display:none"></canvas></div></div>
+  </div>
+  <div class="gf"><div class="card"><div class="card-title">OEE Trend — Top 4 Lines</div><div class="card-sub">Monthly</div>
+  <div class="ch" style="height:220px"><div class="spin-wrap" id="l-oeet"><div class="spin"></div></div><canvas id="c-oeet" style="display:none"></canvas></div></div></div>
+  <div class="card"><div class="card-title">Production Line Efficiency Ranking</div><div class="card-sub">Avg OEE%</div><div id="eff-bars" style="padding:.3rem 0"></div></div>
+</div>
+
+<!-- ═══ FINANCE TAB ══════════════════════════════════════════════ -->
+<div class="page" id="page-fin">
+  <div class="kpi-grid">
+    <div class="kpi" style="--accent:var(--c2)"><div class="kpi-lbl">AR Outstanding</div><div class="kpi-val" id="kv-ar">—</div><div class="kpi-sub" id="kv-ar-s">open invoices</div><div class="kpi-ico">📋</div></div>
+    <div class="kpi" style="--accent:var(--c6)"><div class="kpi-lbl">AP Outstanding</div><div class="kpi-val" id="kv-ap">—</div><div class="kpi-sub">unpaid bills</div><div class="kpi-ico">🧾</div></div>
+    <div class="kpi" style="--accent:var(--c5)"><div class="kpi-lbl">Inventory Value</div><div class="kpi-val" id="kv-invv">—</div><div class="kpi-sub">at cost</div><div class="kpi-ico">🏪</div></div>
+    <div class="kpi" style="--accent:var(--c3)"><div class="kpi-lbl">Avg Days Overdue</div><div class="kpi-val" id="kv-ovd">—</div><div class="kpi-sub">AR overdue avg</div><div class="kpi-ico">⏰</div></div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="card-title">Top 10 SKUs by Inventory Value</div><div class="card-sub">Stock × avg unit cost</div>
+    <div class="ch" style="height:300px"><div class="spin-wrap" id="l-invv"><div class="spin"></div></div><canvas id="c-invv" style="display:none"></canvas></div></div>
+    <div class="card"><div class="card-title">AR by Status</div><div class="card-sub">Invoice amount split</div>
+    <div class="ch" style="height:300px"><div class="spin-wrap" id="l-ardo"><div class="spin"></div></div><canvas id="c-ardo" style="display:none"></canvas></div></div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="card-title">Stock vs Outbound (Bubble)</div><div class="card-sub">Top 20 SKUs · bubble = unit cost</div>
+    <div class="ch" style="height:280px"><div class="spin-wrap" id="l-scat"><div class="spin"></div></div><canvas id="c-scat" style="display:none"></canvas></div></div>
+    <div class="card"><div class="card-title">Inventory Value by Warehouse</div><div class="card-sub">Total at cost per warehouse</div>
+    <div class="ch" style="height:280px"><div class="spin-wrap" id="l-wh"><div class="spin"></div></div><canvas id="c-wh" style="display:none"></canvas></div></div>
+  </div>
+</div>
+
+<!-- ═══ KAFKA / LIVE STREAM TAB ════════════════════════════════ -->
+<div class="page" id="page-kafka">
+  <div class="kpi-grid">
+    <div class="kpi" style="--accent:var(--c1)"><div class="kpi-lbl">Total Kafka Events</div><div class="kpi-val" id="kv-ktotal">—</div><div class="kpi-sub">All topics consumed</div><div class="kpi-ico">📨</div></div>
+    <div class="kpi" style="--accent:var(--c4)"><div class="kpi-lbl">Sales Events</div><div class="kpi-val" id="kv-ksales">—</div><div class="kpi-sub">erp.fact_sales_order</div><div class="kpi-ico">🛒</div></div>
+    <div class="kpi" style="--accent:var(--c5)"><div class="kpi-lbl">Clickstream Events</div><div class="kpi-val" id="kv-kclick">—</div><div class="kpi-sub">erp.fact_clickstream_event</div><div class="kpi-ico">🖱️</div></div>
+    <div class="kpi" style="--accent:var(--c3)"><div class="kpi-lbl">Inventory Events</div><div class="kpi-val" id="kv-kinv">—</div><div class="kpi-sub">erp.fact_inventory_movement</div><div class="kpi-ico">📦</div></div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="card-title">Events per Topic · Last 60 Minutes</div><div class="card-sub">Grouped by Kafka topic per 5-min bucket</div>
+    <div class="ch" style="height:260px"><div class="spin-wrap" id="l-kevt"><div class="spin"></div></div><canvas id="c-kevt" style="display:none"></canvas></div></div>
+    <div class="card"><div class="card-title">Consumer Lag per Topic</div><div class="card-sub">Current offset lag (lower = healthier)</div>
+    <div id="lag-bars" style="padding:.25rem 0;min-height:180px"><div class="spin-wrap" id="l-lag"><div class="spin"></div></div></div></div>
+  </div>
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.8rem">
+      <div><div class="card-title">⚡ Live Event Feed</div><div class="card-sub">Most recent events from Kafka → ClickHouse</div></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div class="dot ok" style="animation:pulse 1s infinite"></div>
+        <span style="font-size:.75rem;color:var(--muted)">Auto-refreshing</span>
+        <button class="hdr-btn" onclick="loadLiveFeed()">Refresh Feed</button>
+      </div>
+    </div>
+    <div id="live-feed"><div class="spin-wrap" id="l-feed"><div class="spin"></div></div></div>
+  </div>
+  <div class="card" style="margin-top:1.25rem">
+    <div class="card-title">Start Live Streaming</div>
+    <div class="card-sub" style="margin-bottom:1rem">Run the Kafka producer to send live ERP events</div>
+    <div style="background:rgba(0,0,0,.4);border:1px solid var(--border);border-radius:8px;padding:1rem;font-family:monospace;font-size:.8rem;color:#a5f3fc">
+      <div style="color:var(--muted);margin-bottom:.5rem"># Start Kafka stack first</div>
+      docker compose up -d zookeeper kafka kafka-ui kafka-consumer<br><br>
+      <div style="color:var(--muted);margin-bottom:.5rem"># Stream live events (10 events/sec for 5 minutes)</div>
+      python platform/stream_to_kafka.py --tps 10 --duration 300<br><br>
+      <div style="color:var(--muted);margin-bottom:.5rem"># Monitor topics in Kafka UI</div>
+      <a href="http://localhost:8090" target="_blank" style="color:var(--c1)">http://localhost:8090</a> → Topics → erp.*
+    </div>
+  </div>
+</div>
+
+<!-- ═══ PIPELINE TAB ════════════════════════════════════════════ -->
+<div class="page" id="page-pipeline">
+  <div class="kpi-grid">
+    <div class="kpi" style="--accent:var(--c4)"><div class="kpi-lbl">Pipeline Runs (24h)</div><div class="kpi-val" id="kv-pruns">—</div><div class="kpi-sub">Airflow executions</div><div class="kpi-ico">🔄</div></div>
+    <div class="kpi" style="--accent:var(--c1)"><div class="kpi-lbl">dbt Models</div><div class="kpi-val">7</div><div class="kpi-sub">3 views · 4 tables</div><div class="kpi-ico">🛠️</div></div>
+    <div class="kpi" style="--accent:var(--c5)"><div class="kpi-lbl">ClickHouse Tables</div><div class="kpi-val" id="kv-chtbl">—</div><div class="kpi-sub">mart_db + staging_db</div><div class="kpi-ico">🗄️</div></div>
+    <div class="kpi" style="--accent:var(--c3)"><div class="kpi-lbl">Total Rows</div><div class="kpi-val" id="kv-trows">—</div><div class="kpi-sub">Across all tables</div><div class="kpi-ico">📊</div></div>
+  </div>
+
+  <div class="g2">
+    <div class="card"><div class="card-title">��️ Pipeline Architecture</div><div class="card-sub">Current running stack</div>
+      <div style="padding:.5rem 0">
+        <div class="pipeline-step">
+          <div class="step-icon" style="background:rgba(0,212,255,.15)">📁</div>
+          <div class="step-info"><div class="step-name">Data Generator</div><div class="step-desc">CSV files → generated_data/ · 3.4M rows</div></div>
+          <div class="step-status" style="color:var(--c4)">✓ Complete</div>
+        </div>
+        <div class="pipeline-step">
+          <div class="step-icon" style="background:rgba(0,212,255,.15)">🗄️</div>
+          <div class="step-info"><div class="step-name">ClickHouse</div><div class="step-desc">localhost:9000 · localhost:8123 (HTTP)</div></div>
+          <div class="step-status" id="ps-ch" style="color:var(--muted)">Checking…</div>
+        </div>
+        <div class="pipeline-step">
+          <div class="step-icon" style="background:rgba(132,94,247,.15)">🛠️</div>
+          <div class="step-info"><div class="step-name">dbt Transformations</div><div class="step-desc">Docker: mycola_dbt · 7 models · mart_db_mart.*</div></div>
+          <div class="step-status" style="color:var(--c4)">✓ Active</div>
+        </div>
+        <div class="pipeline-step">
+          <div class="step-icon" style="background:rgba(255,217,61,.15)">⚡</div>
+          <div class="step-info"><div class="step-name">Kafka Broker</div><div class="step-desc">localhost:9092 · Topics: erp.*</div></div>
+          <div class="step-status" id="ps-kafka" style="color:var(--muted)">Checking…</div>
+        </div>
+        <div class="pipeline-step">
+          <div class="step-icon" style="background:rgba(107,203,119,.15)">📨</div>
+          <div class="step-info"><div class="step-name">Kafka → ClickHouse Consumer</div><div class="step-desc">staging_db.kafka_events · continuous</div></div>
+          <div class="step-status" id="ps-consumer" style="color:var(--muted)">Checking…</div>
+        </div>
+        <div class="pipeline-step">
+          <div class="step-icon" style="background:rgba(255,107,107,.15)">🔄</div>
+          <div class="step-info"><div class="step-name">Airflow Orchestration</div><div class="step-desc">localhost:8081 · 2 DAGs · hourly + every 5min</div></div>
+          <div class="step-status" id="ps-af" style="color:var(--muted)">Checking…</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card"><div class="card-title">📋 Table Row Counts</div><div class="card-sub">Live from ClickHouse</div>
+    <div class="tscroll" style="max-height:380px"><div class="spin-wrap" id="l-counts"><div class="spin"></div></div>
+    <table id="t-counts" style="display:none"><thead><tr><th>Table</th><th>Rows</th><th>Status</th></tr></thead><tbody id="tb-counts"></tbody></table>
+    </div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📜 Recent Pipeline Runs</div>
+    <div class="card-sub">From Airflow via staging_db.pipeline_runs — start Airflow first</div>
+    <div class="tscroll"><div class="spin-wrap" id="l-pruns"><div class="spin"></div></div>
+    <table id="t-pruns" style="display:none"><thead><tr><th>Run At</th><th>DAG</th><th>Run ID</th><th>Status</th></tr></thead><tbody id="tb-pruns"></tbody></table>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:1.25rem">
+    <div class="card-title">🚀 Start Full Stack</div>
+    <div class="card-sub" style="margin-bottom:1rem">Launch all services with Docker Compose</div>
+    <div style="background:rgba(0,0,0,.4);border:1px solid var(--border);border-radius:8px;padding:1rem;font-family:monospace;font-size:.79rem;color:#a5f3fc;line-height:1.8">
+      <span style="color:var(--muted)"># Start Kafka + Airflow (ClickHouse already running)</span><br>
+      docker compose up -d<br><br>
+      <span style="color:var(--muted)"># Check all containers</span><br>
+      docker compose ps<br><br>
+      <span style="color:var(--muted)"># Airflow UI</span>  <a href="http://localhost:8081" target="_blank" style="color:var(--c1)">http://localhost:8081</a>  admin / admin<br>
+      <span style="color:var(--muted)"># Kafka UI  </span>  <a href="http://localhost:8090" target="_blank" style="color:var(--c1)">http://localhost:8090</a><br>
+      <span style="color:var(--muted)"># ClickHouse</span>  <a href="http://localhost:8123/play" target="_blank" style="color:var(--c1)">http://localhost:8123/play</a><br>
+      <span style="color:var(--muted)"># Dashboard  </span>  <span style="color:var(--c4)">This page ← you are here</span>
+    </div>
+  </div>
+</div>
+<script>
+const CH='http://localhost:8123';
+const COLORS=['#00d4ff','#ff6b6b','#ffd93d','#6bcb77','#845ef7','#ff922b','#20c997','#f06595','#74c0fc','#a9e34b'];
+const charts={};
+let liveTimer=null;
+
+async function q(sql){
+  const r=await fetch(`${CH}/?query=${encodeURIComponent(sql)}&default_format=JSONCompact`);
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  return r.json();
+}
+function fmt(n,d=0){
+  if(n==null||isNaN(n))return'—';
+  if(n>=1e9)return(n/1e9).toFixed(1)+'B';
+  if(n>=1e6)return(n/1e6).toFixed(1)+'M';
+  if(n>=1e3)return(n/1e3).toFixed(1)+'K';
+  return Number(n).toFixed(d);
+}
+function hex2rgba(h,a){const r=parseInt(h.slice(1,3),16),g=parseInt(h.slice(3,5),16),b=parseInt(h.slice(5,7),16);return `rgba(${r},${g},${b},${a})`}
+function grad(ctx,hex){const g=ctx.createLinearGradient(0,0,0,ctx.canvas.height||280);g.addColorStop(0,hex2rgba(hex,.5));g.addColorStop(1,hex2rgba(hex,.02));return g}
+function show(c,l){document.getElementById(l).style.display='none';document.getElementById(c).style.display='block'}
+function errMsg(l,m){document.getElementById(l).innerHTML=`<div class="err-wrap">⚠ ${m}</div>`}
+function setDot(id,state,txt){const d=document.getElementById(id);if(d){d.className='dot'+(state==='ok'?' ok':state==='warn'?' warn':'');document.getElementById(id.replace('Dot','Txt')).textContent=txt||''}}
+
+Chart.defaults.color='#64748b';
+Chart.defaults.borderColor='rgba(255,255,255,0.06)';
+const DT={grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#64748b'}};
+
+function showTab(n){
+  const names=['exec','sales','ops','fin','kafka','pipeline'];
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',names[i]===n));
+  document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id==='page-'+n));
+  if(n==='sales'&&!charts.reps) loadSales();
+  if(n==='ops'&&!charts.radar) loadOps();
+  if(n==='fin'&&!charts.invv) loadFin();
+  if(n==='kafka') loadKafka();
+  if(n==='pipeline') loadPipeline();
+}
+
+async function checkServices(){
+  // ClickHouse
+  try{await q('SELECT 1');setDot('chDot','ok','ClickHouse ✓')}catch{setDot('chDot','','ClickHouse ✗')}
+  // Kafka (via consumer table)
+  try{const d=await q('SELECT count() FROM staging_db.kafka_events');setDot('kDot','ok','Kafka ✓')}catch{setDot('kDot','','Kafka —')}
+  // Airflow (via pipeline_runs)
+  try{const d=await q('SELECT count() FROM staging_db.pipeline_runs');setDot('afDot','ok','Airflow ✓')}catch{setDot('afDot','','Airflow —')}
+}
+
+function refreshAll(){
+  Object.values(charts).forEach(c=>c.destroy());Object.keys(charts).forEach(k=>delete charts[k]);
+  loadExec();
+  const a=document.querySelector('.page.active').id.replace('page-','');
+  if(a==='sales')loadSales();
+  if(a==='ops')loadOps();
+  if(a==='fin')loadFin();
+  if(a==='kafka')loadKafka();
+  if(a==='pipeline')loadPipeline();
+  document.getElementById('tsLabel').textContent='Updated '+new Date().toLocaleTimeString();
+}
+
+// ── SORT TABLE ─────────────────────────────────────────────────
+let _sc=4,_sd=-1;
+function srt(th,col){
+  if(_sc===col)_sd*=-1;else{_sc=col;_sd=-1;}
+  const tb=th.closest('table').querySelector('tbody');
+  const rows=Array.from(tb.querySelectorAll('tr'));
+  rows.sort((a,b)=>{const av=a.cells[col].dataset.v||a.cells[col].textContent,bv=b.cells[col].dataset.v||b.cells[col].textContent;return _sd*(isNaN(av)?av.localeCompare(bv):Number(av)-Number(bv))});
+  rows.forEach(r=>tb.appendChild(r));
+}
+// ── EXEC ───────────────────────────────────────────────────────
+async function loadExec(){
+  try{
+    const k=await q(`SELECT sum(confirmed_revenue_pkr),sum(confirmed_orders),avg(avg_order_value_pkr),argMax(territory_id,confirmed_revenue_pkr) FROM mart_db_mart.monthly_revenue_by_territory WHERE order_month_start>=toDate('2025-01-01')`);
+    const r=k.data[0];
+    document.getElementById('kv-rev').textContent='PKR '+fmt(r[0]);
+    document.getElementById('kv-ord').textContent=fmt(r[1]);
+    document.getElementById('kv-aov').textContent='PKR '+fmt(r[2]);
+    document.getElementById('kv-ter').textContent=r[3];
+  }catch(e){}
+  try{const d=await q('SELECT count() FROM staging_db.kafka_events');document.getElementById('kv-kevt').textContent=fmt(d.data[0][0])}catch{document.getElementById('kv-kevt').textContent='0'}
+  try{const d=await q('SELECT count() FROM staging_db.pipeline_runs');document.getElementById('kv-runs').textContent=fmt(d.data[0][0])}catch{document.getElementById('kv-runs').textContent='0'}
+
+  // Revenue trend
+  try{
+    const d=await q(`SELECT order_month_start,sum(confirmed_revenue_pkr) as cr,sum(total_revenue_pkr) as tr FROM mart_db_mart.monthly_revenue_by_territory WHERE order_month_start>=toDate('2023-07-01') GROUP BY order_month_start ORDER BY order_month_start`);
+    const labels=d.data.map(r=>r[0].slice(0,7));
+    show('c-revt','l-revt');
+    const ctx=document.getElementById('c-revt').getContext('2d');
+    charts.revt=new Chart(ctx,{type:'line',data:{labels,datasets:[
+      {label:'Confirmed',data:d.data.map(r=>parseFloat(r[1])),borderColor:'#00d4ff',backgroundColor:grad(ctx,'#00d4ff'),borderWidth:2.5,pointRadius:2,fill:true,tension:.4},
+      {label:'Total',data:d.data.map(r=>parseFloat(r[2])),borderColor:'#845ef7',backgroundColor:'transparent',borderWidth:1.5,pointRadius:1,fill:false,tension:.4,borderDash:[4,3]}
+    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#94a3b8',boxWidth:12}}},scales:{x:{...DT,ticks:{...DT.ticks,maxTicksLimit:14}},y:{...DT,ticks:{...DT.ticks,callback:v=>'PKR '+fmt(v)}}}}});
+  }catch(e){errMsg('l-revt','Revenue trend failed')}
+
+  // Stacked orders by territory
+  try{
+    const d=await q(`SELECT order_month_start,territory_id,confirmed_orders FROM mart_db_mart.monthly_revenue_by_territory WHERE order_month_start>=toDate('2025-01-01') ORDER BY order_month_start,territory_id`);
+    const months=[...new Set(d.data.map(r=>r[0].slice(0,7)))].sort();
+    const ters=[...new Set(d.data.map(r=>r[1]))].sort();
+    const bt={};d.data.forEach(r=>{const m=r[0].slice(0,7),t=r[1];if(!bt[t])bt[t]={};bt[t][m]=parseInt(r[2])||0});
+    show('c-oter','l-oter');
+    const ctx=document.getElementById('c-oter').getContext('2d');
+    charts.oter=new Chart(ctx,{type:'bar',data:{labels:months,datasets:ters.map((t,i)=>({label:t,data:months.map(m=>bt[t]?.[m]||0),backgroundColor:hex2rgba(COLORS[i%COLORS.length],.72),borderColor:COLORS[i%COLORS.length],borderWidth:1,borderRadius:2}))},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#94a3b8',boxWidth:10,font:{size:10}}}},scales:{x:{stacked:true,...DT},y:{stacked:true,...DT,ticks:{...DT.ticks,callback:v=>fmt(v)}}}}});
+  }catch(e){errMsg('l-oter','Chart failed')}
+
+  // Revenue share donut
+  try{
+    const d=await q(`SELECT territory_id,sum(confirmed_revenue_pkr) as rev FROM mart_db_mart.monthly_revenue_by_territory GROUP BY territory_id ORDER BY rev DESC`);
+    show('c-rshare','l-rshare');
+    const ctx=document.getElementById('c-rshare').getContext('2d');
+    charts.rshare=new Chart(ctx,{type:'doughnut',data:{labels:d.data.map(r=>r[0]),datasets:[{data:d.data.map(r=>parseFloat(r[1])),backgroundColor:COLORS.map(c=>hex2rgba(c,.82)),borderColor:'#080b14',borderWidth:3,hoverOffset:8}]},options:{responsive:true,maintainAspectRatio:false,cutout:'63%',plugins:{legend:{position:'right',labels:{color:'#94a3b8',boxWidth:11,padding:12}},tooltip:{callbacks:{label:c=>` ${c.label}: PKR ${fmt(c.raw)}`}}}}});
+  }catch(e){errMsg('l-rshare','Chart failed')}
+}
+
+// â”€â”€ EXEC â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+async function loadExec(){
+  try{
+    const k=await q(`SELECT sum(confirmed_revenue_pkr),sum(confirmed_orders),avg(avg_order_value_pkr),argMax(territory_id,confirmed_revenue_pkr) FROM mart_db_mart.monthly_revenue_by_territory WHERE order_month_start>=toDate('2025-01-01')`);
+    const r=k.data[0];
+    document.getElementById('kv-rev').textContent='PKR '+fmt(r[0]);
+    document.getElementById('kv-ord').textContent=fmt(r[1]);
+    document.getElementById('kv-aov').textContent='PKR '+fmt(r[2]);
+    document.getElementById('kv-ter').textContent=r[3];
+  }catch(e){}
+  try{const d=await q('SELECT count() FROM staging_db.kafka_events');document.getElementById('kv-kevt').textContent=fmt(d.data[0][0])}catch{document.getElementById('kv-kevt').textContent='0'}
+  try{const d=await q('SELECT count() FROM staging_db.pipeline_runs');document.getElementById('kv-runs').textContent=fmt(d.data[0][0])}catch{document.getElementById('kv-runs').textContent='0'}
+
+  try{
+    const d=await q(`SELECT order_month_start,sum(confirmed_revenue_pkr) as cr,sum(total_revenue_pkr) as tr FROM mart_db_mart.monthly_revenue_by_territory WHERE order_month_start>=toDate('2023-07-01') GROUP BY order_month_start ORDER BY order_month_start`);
+    const labels=d.data.map(r=>r[0].slice(0,7));
+    show('c-revt','l-revt');
+    const ctx=document.getElementById('c-revt').getContext('2d');
+    charts.revt=new Chart(ctx,{type:'line',data:{labels,datasets:[
+      {label:'Confirmed',data:d.data.map(r=>parseFloat(r[1])),borderColor:'#00d4ff',backgroundColor:grad(ctx,'#00d4ff'),borderWidth:2.5,pointRadius:2,fill:true,tension:.4},
+      {label:'Total',data:d.data.map(r=>parseFloat(r[2])),borderColor:'#845ef7',backgroundColor:'transparent',borderWidth:1.5,pointRadius:1,fill:false,tension:.4,borderDash:[4,3]}
+    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#94a3b8',boxWidth:12}}},scales:{x:{...DT,ticks:{...DT.ticks,maxTicksLimit:14}},y:{...DT,ticks:{...DT.ticks,callback:v=>'PKR '+fmt(v)}}}}});
+  }catch(e){errMsg('l-revt','Revenue trend failed')}
+
+  try{
+    const d=await q(`SELECT order_month_start,territory_id,confirmed_orders FROM mart_db_mart.monthly_revenue_by_territory WHERE order_month_start>=toDate('2025-01-01') ORDER BY order_month_start,territory_id`);
+    const months=[...new Set(d.data.map(r=>r[0].slice(0,7)))].sort();
+    const ters=[...new Set(d.data.map(r=>r[1]))].sort();
+    const bt={};d.data.forEach(r=>{const m=r[0].slice(0,7),t=r[1];if(!bt[t])bt[t]={};bt[t][m]=parseInt(r[2])||0});
+    show('c-oter','l-oter');
+    const ctx=document.getElementById('c-oter').getContext('2d');
+    charts.oter=new Chart(ctx,{type:'bar',data:{labels:months,datasets:ters.map((t,i)=>({label:t,data:months.map(m=>bt[t]?.[m]||0),backgroundColor:hex2rgba(COLORS[i%COLORS.length],.72),borderColor:COLORS[i%COLORS.length],borderWidth:1,borderRadius:2}))},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#94a3b8',boxWidth:10,font:{size:10}}}},scales:{x:{stacked:true,...DT},y:{stacked:true,...DT,ticks:{...DT.ticks,callback:v=>fmt(v)}}}}});
+  }catch(e){errMsg('l-oter','Chart failed')}
+
+  try{
+    const d=await q(`SELECT territory_id,sum(confirmed_revenue_pkr) as rev FROM mart_db_mart.monthly_revenue_by_territory GROUP BY territory_id ORDER BY rev DESC`);
+    show('c-rshare','l-rshare');
+    const ctx=document.getElementById('c-rshare').getContext('2d');
+    charts.rshare=new Chart(ctx,{type:'doughnut',data:{labels:d.data.map(r=>r[0]),datasets:[{data:d.data.map(r=>parseFloat(r[1])),backgroundColor:COLORS.map(c=>hex2rgba(c,.82)),borderColor:'#080b14',borderWidth:3,hoverOffset:8}]},options:{responsive:true,maintainAspectRatio:false,cutout:'63%',plugins:{legend:{position:'right',labels:{color:'#94a3b8',boxWidth:11,padding:12}},tooltip:{callbacks:{label:c=>` ${c.label}: PKR ${fmt(c.raw)}`}}}}});
+  }catch(e){errMsg('l-rshare','Chart failed')}
+}
+
+// â”€â”€ SALES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+async function loadSales(){
+  try{
+    const d=await q(`SELECT rep_name,territory_id,sum(confirmed_revenue_pkr) as rev,sum(confirmed_orders) as ord FROM mart_db_mart.sales_rep_performance GROUP BY rep_name,territory_id ORDER BY rev DESC LIMIT 15`);
+    show('c-reps','l-reps');
+    const ctx=document.getElementById('c-reps').getContext('2d');
+    charts.reps=new Chart(ctx,{type:'bar',data:{labels:d.data.map(r=>r[0]),datasets:[{label:'Revenue (PKR)',data:d.data.map(r=>parseFloat(r[2])),backgroundColor:d.data.map((_,i)=>hex2rgba(COLORS[i%COLORS.length],.75)),borderColor:d.data.map((_,i)=>COLORS[i%COLORS.length]),borderWidth:1,borderRadius:4}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' PKR '+fmt(c.raw)+' | '+d.data[c.dataIndex][1]}}},scales:{x:{...DT,ticks:{...DT.ticks,callback:v=>'PKR '+fmt(v)}},y:{grid:{display:false},ticks:{color:'#94a3b8',font:{size:10}}}}}});
+  }catch(e){errMsg('l-reps','Failed')}
+
+  try{
+    const d=await q(`SELECT territory_id,sum(confirmed_orders) as co,sum(pending_orders) as po FROM mart_db_mart.monthly_revenue_by_territory WHERE order_month_start=(SELECT max(order_month_start) FROM mart_db_mart.monthly_revenue_by_territory) GROUP BY territory_id ORDER BY territory_id`);
+    show('c-cpend','l-cpend');
+    const ctx=document.getElementById('c-cpend').getContext('2d');
+    charts.cpend=new Chart(ctx,{type:'bar',data:{labels:d.data.map(r=>r[0]),datasets:[{label:'Confirmed',data:d.data.map(r=>parseInt(r[1])),backgroundColor:hex2rgba('#6bcb77',.75),borderColor:'#6bcb77',borderWidth:1,borderRadius:4},{label:'Pending',data:d.data.map(r=>parseInt(r[2])),backgroundColor:hex2rgba('#ffd93d',.75),borderColor:'#ffd93d',borderWidth:1,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#94a3b8',boxWidth:11}}},scales:{x:{...DT},y:{...DT,ticks:{...DT.ticks}}}}});
+  }catch(e){errMsg('l-cpend','Failed')}
+
+  try{
+    const d=await q(`SELECT order_month_start,territory_id,confirmed_orders FROM mart_db_mart.monthly_revenue_by_territory WHERE order_month_start>=toDate('2025-01-01') ORDER BY order_month_start,territory_id`);
+    const months=[...new Set(d.data.map(r=>r[0].slice(0,7)))].sort();
+    const ters=[...new Set(d.data.map(r=>r[1]))].sort();
+    const bt={};d.data.forEach(r=>{const m=r[0].slice(0,7),t=r[1];if(!bt[t])bt[t]={};bt[t][m]=parseInt(r[2])||0});
+    show('c-tlines','l-tlines');
+    const ctx=document.getElementById('c-tlines').getContext('2d');
+    charts.tlines=new Chart(ctx,{type:'line',data:{labels:months,datasets:ters.map((t,i)=>({label:t,data:months.map(m=>bt[t]?.[m]||0),borderColor:COLORS[i%COLORS.length],backgroundColor:'transparent',borderWidth:2,pointRadius:2,tension:.35}))},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#94a3b8',boxWidth:10,font:{size:10}}}},scales:{x:{...DT},y:{...DT,ticks:{...DT.ticks}}}}});
+  }catch(e){errMsg('l-tlines','Failed')}
+
+  try{
+    const d=await q(`SELECT rep_name,territory_id,sum(confirmed_orders) as ord,sum(confirmed_revenue_pkr) as rev,avg(avg_order_value_pkr) as aov FROM mart_db_mart.sales_rep_performance GROUP BY rep_name,territory_id ORDER BY rev DESC LIMIT 50`);
+    const total=d.data.reduce((s,r)=>s+parseFloat(r[3]),0);
+    document.getElementById('tb-reps').innerHTML=d.data.map((r,i)=>{
+      const rev=parseFloat(r[3]),sh=((rev/total)*100).toFixed(1);
+      return `<tr><td class="rank">${i+1}</td><td>${r[0]}</td><td><span class="badge">${r[1]}</span></td><td data-v="${r[2]}">${fmt(r[2])}</td><td data-v="${rev}">PKR ${fmt(rev)}</td><td data-v="${r[4]}">PKR ${fmt(parseFloat(r[4]))}</td><td><div style="display:flex;align-items:center;gap:7px"><div class="pbar" style="width:70px"><div class="pfill" style="width:${Math.min(sh*4,100)}%;background:${COLORS[i%COLORS.length]}"></div></div><span style="font-size:.7rem;color:#64748b">${sh}%</span></div></td></tr>`;
+    }).join('');
+    document.getElementById('l-ltbl').style.display='none';
+    document.getElementById('t-reps').style.display='table';
+  }catch(e){errMsg('l-ltbl','Failed')}
+}
+
+// â”€â”€ OPS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+async function loadOps(){
+  try{const d=await q(`SELECT avg(avg_oee_pct),sum(total_good_units),sum(total_defective_units),avg(avg_efficiency_pct) FROM mart_db_mart.production_efficiency`);const r=d.data[0];document.getElementById('kv-oee').textContent=parseFloat(r[0]).toFixed(1)+'%';document.getElementById('kv-good').textContent=fmt(r[1]);document.getElementById('kv-def').textContent=fmt(r[2]);document.getElementById('kv-eff').textContent=parseFloat(r[3]).toFixed(1)+'%'}catch(e){}
+
+  try{
+    const d=await q(`SELECT line_name,avg(avg_oee_pct) as oee,avg(avg_efficiency_pct) as eff,(1-avg(avg_defect_rate_pct)/100)*100 as qual FROM mart_db_mart.production_efficiency GROUP BY line_name ORDER BY oee DESC LIMIT 6`);
+    show('c-radar','l-radar');
+    const ctx=document.getElementById('c-radar').getContext('2d');
+    charts.radar=new Chart(ctx,{type:'radar',data:{labels:['OEE %','Efficiency %','Quality %'],datasets:d.data.map((r,i)=>({label:r[0].length>22?r[0].slice(0,22)+'â€¦':r[0],data:[parseFloat(r[1]),parseFloat(r[2]),parseFloat(r[3])],borderColor:COLORS[i],backgroundColor:hex2rgba(COLORS[i],.1),pointBackgroundColor:COLORS[i],borderWidth:2,pointRadius:3}))},options:{responsive:true,maintainAspectRatio:false,scales:{r:{min:60,max:100,grid:{color:'rgba(255,255,255,.07)'},angleLines:{color:'rgba(255,255,255,.07)'},ticks:{color:'#64748b',backdropColor:'transparent',stepSize:10},pointLabels:{color:'#94a3b8',font:{size:10}}}},plugins:{legend:{labels:{color:'#94a3b8',boxWidth:10,font:{size:10}}}}}});
+  }catch(e){errMsg('l-radar','Failed')}
+
+  try{
+    const d=await q(`SELECT line_name,sum(total_planned_units) as p,sum(total_actual_units) as a,sum(total_good_units) as g FROM mart_db_mart.production_efficiency GROUP BY line_name ORDER BY p DESC LIMIT 8`);
+    show('c-pvsa','l-pvsa');
+    const ctx=document.getElementById('c-pvsa').getContext('2d');
+    const lbs=d.data.map(r=>r[0].length>18?r[0].slice(0,18)+'â€¦':r[0]);
+    charts.pvsa=new Chart(ctx,{type:'bar',data:{labels:lbs,datasets:[{label:'Planned',data:d.data.map(r=>parseInt(r[1])),backgroundColor:hex2rgba('#845ef7',.7),borderColor:'#845ef7',borderWidth:1,borderRadius:3},{label:'Actual',data:d.data.map(r=>parseInt(r[2])),backgroundColor:hex2rgba('#00d4ff',.7),borderColor:'#00d4ff',borderWidth:1,borderRadius:3},{label:'Good',data:d.data.map(r=>parseInt(r[3])),backgroundColor:hex2rgba('#6bcb77',.7),borderColor:'#6bcb77',borderWidth:1,borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#94a3b8',boxWidth:10}}},scales:{x:{grid:{display:false},ticks:{color:'#64748b',font:{size:9}}},y:{...DT,ticks:{...DT.ticks,callback:v=>fmt(v)}}}}});
+  }catch(e){errMsg('l-pvsa','Failed')}
+
+  try{
+    const d=await q(`SELECT run_month_start,line_name,avg_oee_pct FROM mart_db_mart.production_efficiency WHERE line_name IN (SELECT line_name FROM mart_db_mart.production_efficiency GROUP BY line_name ORDER BY avg(avg_oee_pct) DESC LIMIT 4) AND run_month_start>=toDate('2024-01-01') ORDER BY run_month_start,line_name`);
+    const months=[...new Set(d.data.map(r=>r[0].slice(0,7)))].sort();
+    const lines=[...new Set(d.data.map(r=>r[1]))];
+    const bl={};d.data.forEach(r=>{const m=r[0].slice(0,7),l=r[1];if(!bl[l])bl[l]={};bl[l][m]=parseFloat(r[2])||0});
+    show('c-oeet','l-oeet');
+    const ctx=document.getElementById('c-oeet').getContext('2d');
+    charts.oeet=new Chart(ctx,{type:'line',data:{labels:months,datasets:lines.map((l,i)=>({label:l.length>20?l.slice(0,20)+'â€¦':l,data:months.map(m=>bl[l]?.[m]||null),borderColor:COLORS[i],backgroundColor:'transparent',borderWidth:2.5,pointRadius:2,tension:.35,spanGaps:true}))},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#94a3b8',boxWidth:10,font:{size:10}}}},scales:{x:{...DT,ticks:{...DT.ticks,maxTicksLimit:12}},y:{min:50,...DT,ticks:{...DT.ticks,callback:v=>v+'%'}}}}});
+  }catch(e){errMsg('l-oeet','Failed')}
+
+  try{
+    const d=await q(`SELECT line_name,avg(avg_oee_pct) as oee FROM mart_db_mart.production_efficiency GROUP BY line_name ORDER BY oee DESC`);
+    document.getElementById('eff-bars').innerHTML=d.data.map((r,i)=>{
+      const nm=r[0],ov=parseFloat(r[1]).toFixed(1),pct=parseFloat(r[1]).toFixed(0);
+      return `<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.03)"><div style="width:190px;font-size:.77rem;color:#94a3b8;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${nm}">${nm}</div><div class="pbar" style="flex:1"><div class="pfill" style="width:${pct}%;background:linear-gradient(90deg,${COLORS[i%COLORS.length]},${COLORS[(i+3)%COLORS.length]})"></div></div><div style="width:48px;text-align:right;font-size:.82rem;font-weight:600;color:${COLORS[i%COLORS.length]}">${ov}%</div></div>`;
+    }).join('');
+  }catch(e){}
+}
+
+// â”€â”€ FINANCE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+async function loadFin(){
+  try{const ar=await q(`SELECT sum(outstanding_pkr),count(),avg(days_overdue) FROM mart_db.fact_accounts_receivable WHERE status!='Paid'`);const ap=await q(`SELECT sum(outstanding_pkr) FROM mart_db.fact_accounts_payable WHERE status!='Paid'`);const inv=await q(`SELECT sum(current_stock*avg_unit_cost_pkr) FROM mart_db_mart.inventory_summary`);const r=ar.data[0];document.getElementById('kv-ar').textContent='PKR '+fmt(r[0]);document.getElementById('kv-ar-s').textContent=fmt(r[1])+' open invoices';document.getElementById('kv-ap').textContent='PKR '+fmt(ap.data[0][0]);document.getElementById('kv-invv').textContent='PKR '+fmt(inv.data[0][0]);document.getElementById('kv-ovd').textContent=parseFloat(r[2]).toFixed(0)+' days'}catch(e){}
+
+  try{
+    const d=await q(`SELECT sku_name,sum(current_stock*avg_unit_cost_pkr) as val FROM mart_db_mart.inventory_summary GROUP BY sku_name ORDER BY val DESC LIMIT 10`);
+    show('c-invv','l-invv');
+    const ctx=document.getElementById('c-invv').getContext('2d');
+    charts.invv=new Chart(ctx,{type:'bar',data:{labels:d.data.map(r=>r[0].length>20?r[0].slice(0,20)+'â€¦':r[0]),datasets:[{label:'Value (PKR)',data:d.data.map(r=>parseFloat(r[1])),backgroundColor:d.data.map((_,i)=>hex2rgba(COLORS[i%COLORS.length],.75)),borderColor:d.data.map((_,i)=>COLORS[i%COLORS.length]),borderWidth:1,borderRadius:4}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' PKR '+fmt(c.raw)}}},scales:{x:{...DT,ticks:{...DT.ticks,callback:v=>'PKR '+fmt(v)}},y:{grid:{display:false},ticks:{color:'#94a3b8',font:{size:10}}}}}});
+  }catch(e){errMsg('l-invv','Failed')}
+
+  try{
+    const d=await q(`SELECT status,count() as cnt,sum(invoice_amount_pkr) as amt FROM mart_db.fact_accounts_receivable GROUP BY status ORDER BY amt DESC`);
+    show('c-ardo','l-ardo');
+    const ctx=document.getElementById('c-ardo').getContext('2d');
+    const sc={Paid:'#6bcb77',Outstanding:'#ffd93d',Overdue:'#ff6b6b',Partial:'#ff922b'};
+    charts.ardo=new Chart(ctx,{type:'doughnut',data:{labels:d.data.map(r=>r[0]),datasets:[{data:d.data.map(r=>parseFloat(r[2])),backgroundColor:d.data.map(r=>hex2rgba(sc[r[0]]||COLORS[0],.85)),borderColor:'#080b14',borderWidth:3,hoverOffset:8}]},options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{position:'right',labels:{color:'#94a3b8',boxWidth:11,padding:13}},tooltip:{callbacks:{label:c=>` ${c.label}: PKR ${fmt(c.raw)}`,afterLabel:c=>` Count: ${fmt(d.data[c.dataIndex][1])}`}}}}});
+  }catch(e){errMsg('l-ardo','Failed')}
+
+  try{
+    const d=await q(`SELECT sku_name,sum(current_stock) as st,sum(total_outbound) as ob,avg(avg_unit_cost_pkr) as cost FROM mart_db_mart.inventory_summary GROUP BY sku_name HAVING st>0 ORDER BY ob DESC LIMIT 20`);
+    show('c-scat','l-scat');
+    const ctx=document.getElementById('c-scat').getContext('2d');
+    charts.scat=new Chart(ctx,{type:'bubble',data:{datasets:[{label:'SKU',data:d.data.map((r,i)=>({x:parseFloat(r[1]),y:parseFloat(r[2]),r:Math.max(4,Math.min(22,parseFloat(r[3])/600)),label:r[0]})),backgroundColor:d.data.map((_,i)=>hex2rgba(COLORS[i%COLORS.length],.6)),borderColor:d.data.map((_,i)=>COLORS[i%COLORS.length]),borderWidth:1.5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.raw.label} | Stock:${fmt(c.raw.x)} Out:${fmt(c.raw.y)}`}}},scales:{x:{title:{display:true,text:'Current Stock',color:'#64748b'},...DT},y:{title:{display:true,text:'Total Outbound',color:'#64748b'},...DT}}}});
+  }catch(e){errMsg('l-scat','Failed')}
+
+  try{
+    const d=await q(`SELECT warehouse_id,sum(current_stock*avg_unit_cost_pkr) as val FROM mart_db_mart.inventory_summary GROUP BY warehouse_id ORDER BY val DESC`);
+    show('c-wh','l-wh');
+    const ctx=document.getElementById('c-wh').getContext('2d');
+    charts.wh=new Chart(ctx,{type:'bar',data:{labels:d.data.map(r=>r[0]),datasets:[{label:'Value (PKR)',data:d.data.map(r=>parseFloat(r[1])),backgroundColor:d.data.map((_,i)=>hex2rgba(COLORS[i%COLORS.length],.75)),borderColor:d.data.map((_,i)=>COLORS[i%COLORS.length]),borderWidth:1,borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' PKR '+fmt(c.raw)}}},scales:{x:{grid:{display:false},ticks:{color:'#94a3b8'}},y:{...DT,ticks:{...DT.ticks,callback:v=>'PKR '+fmt(v)}}}}});
+  }catch(e){errMsg('l-wh','Failed')}
+}
+
+// â”€â”€ KAFKA â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+async function loadKafka(){
+  try{
+    const d=await q('SELECT count(),countIf(topic LIKE \'%sales%\'),countIf(topic LIKE \'%clickstream%\'),countIf(topic LIKE \'%inventory%\') FROM staging_db.kafka_events');
+    const r=d.data[0];
+    document.getElementById('kv-ktotal').textContent=fmt(r[0]);
+    document.getElementById('kv-ksales').textContent=fmt(r[1]);
+    document.getElementById('kv-kclick').textContent=fmt(r[2]);
+    document.getElementById('kv-kinv').textContent=fmt(r[3]);
+  }catch{['kv-ktotal','kv-ksales','kv-kclick','kv-kinv'].forEach(id=>{document.getElementById(id).textContent='0'})}
+
+  // Events by topic per 5-min bucket (last hour)
+  try{
+    const d=await q(`SELECT toStartOfFiveMinutes(consumed_at) as t,topic,count() as cnt FROM staging_db.kafka_events WHERE consumed_at>=now()-INTERVAL 1 HOUR GROUP BY t,topic ORDER BY t,topic`);
+    if(d.data.length>0){
+      const buckets=[...new Set(d.data.map(r=>r[0].slice(0,16)))].sort();
+      const topics=[...new Set(d.data.map(r=>r[1]))];
+      const bm={};d.data.forEach(r=>{const b=r[0].slice(0,16),t=r[1];if(!bm[t])bm[t]={};bm[t][b]=parseInt(r[2])||0});
+      show('c-kevt','l-kevt');
+      const ctx=document.getElementById('c-kevt').getContext('2d');
+      charts.kevt=new Chart(ctx,{type:'bar',data:{labels:buckets.map(b=>b.slice(11)),datasets:topics.map((t,i)=>({label:t.replace('erp.',''),data:buckets.map(b=>bm[t]?.[b]||0),backgroundColor:hex2rgba(COLORS[i%COLORS.length],.72),borderColor:COLORS[i%COLORS.length],borderWidth:1,borderRadius:2}))},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#94a3b8',boxWidth:10,font:{size:10}}}},scales:{x:{stacked:true,...DT},y:{stacked:true,...DT,ticks:{...DT.ticks}}}}});
+    }else{errMsg('l-kevt','No Kafka events yet â€” start streaming first')}
+  }catch(e){errMsg('l-kevt','Start Kafka to see events')}
+
+  // Consumer lag
+  try{
+    const d=await q(`SELECT topic,partition,lag FROM staging_db.consumer_lag WHERE (topic,recorded_at) IN (SELECT topic,max(recorded_at) FROM staging_db.consumer_lag GROUP BY topic) ORDER BY lag DESC`);
+    const container=document.getElementById('lag-bars');
+    document.getElementById('l-lag').style.display='none';
+    if(d.data.length>0){
+      const maxLag=Math.max(...d.data.map(r=>parseInt(r[2])),1);
+      container.innerHTML=d.data.map((r,i)=>{
+        const topic=r[0].replace('erp.',''),lag=parseInt(r[2]),pct=(lag/maxLag*100).toFixed(0);
+        const col=lag===0?'#6bcb77':lag<100?'#ffd93d':'#ff6b6b';
+        return `<div class="lag-item"><div class="lag-topic" title="${r[0]}">${topic} [${r[1]}]</div><div class="lag-bar-wrap"><div class="pbar"><div class="pfill" style="width:${pct}%;background:${col}"></div></div></div><div class="lag-num" style="color:${col}">${fmt(lag)}</div></div>`;
+      }).join('');
+    }else{container.innerHTML='<div style="color:var(--muted);font-size:.8rem;padding:1rem;text-align:center">No lag data yet â€” consumer not running</div>'}
+  }catch{document.getElementById('l-lag').innerHTML='<div style="color:var(--muted);font-size:.8rem;padding:1rem;text-align:center">Consumer not running</div>'}
+
+  loadLiveFeed();
+}
+
+async function loadLiveFeed(){
+  const feed=document.getElementById('live-feed');
+  document.getElementById('l-feed')&&(document.getElementById('l-feed').style.display='none');
+  try{
+    const d=await q(`SELECT consumed_at,topic,payload FROM staging_db.kafka_events ORDER BY consumed_at DESC LIMIT 80`);
+    if(d.data.length===0){feed.innerHTML='<div style="color:var(--muted);font-size:.8rem;padding:2rem;text-align:center">No events yet.<br>Run: python platform/stream_to_kafka.py</div>';return}
+    const topicCls={'fact_sales_order':'ev-sales','fact_inventory_movement':'ev-inv','fact_clickstream_event':'ev-click','fact_production_run':'ev-prod','fact_gl_entry':'ev-gl'};
+    feed.innerHTML=d.data.map(r=>{
+      const t=r[0].slice(11,19),topic=r[1].replace('erp.',''),cls=topicCls[topic]||'ev-sales';
+      let payload={};try{payload=JSON.parse(r[2])}catch{}
+      const preview=Object.entries(payload).slice(0,4).map(([k,v])=>`${k}:${v}`).join(' Â· ');
+      return `<div class="event-row"><span class="ev-time">${t}</span><span class="ev-topic ${cls}">${topic.replace('fact_','')}</span><span class="ev-data">${preview}</span></div>`;
+    }).join('');
+  }catch{feed.innerHTML='<div style="color:var(--muted);font-size:.8rem;padding:2rem;text-align:center">Kafka consumer not running</div>'}
+}
+
+// â”€â”€ PIPELINE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+async function loadPipeline(){
+  // Service status dots
+  try{await q('SELECT 1');document.getElementById('ps-ch').textContent='âœ“ Running';document.getElementById('ps-ch').style.color='var(--c4)'}catch{document.getElementById('ps-ch').textContent='âœ— Offline';document.getElementById('ps-ch').style.color='var(--c2)'}
+  try{await q('SELECT count() FROM staging_db.kafka_events');document.getElementById('ps-kafka').textContent='âœ“ Running';document.getElementById('ps-kafka').style.color='var(--c4)';document.getElementById('ps-consumer').textContent='âœ“ Active';document.getElementById('ps-consumer').style.color='var(--c4)'}catch{document.getElementById('ps-kafka').textContent='â€” Not started';document.getElementById('ps-kafka').style.color='var(--muted)';document.getElementById('ps-consumer').textContent='â€” Not started';document.getElementById('ps-consumer').style.color='var(--muted)'}
+  try{await q('SELECT count() FROM staging_db.pipeline_runs');document.getElementById('ps-af').textContent='âœ“ Running';document.getElementById('ps-af').style.color='var(--c4)'}catch{document.getElementById('ps-af').textContent='â€” Not started';document.getElementById('ps-af').style.color='var(--muted)'}
+
+  // Row counts
+  try{
+    const tables=['mart_db.fact_sales_order','mart_db.fact_inventory_movement','mart_db.fact_accounts_receivable','mart_db.fact_accounts_payable','mart_db.fact_production_run','mart_db.fact_clickstream_event','mart_db.dim_customer','mart_db_mart.monthly_revenue_by_territory','mart_db_mart.sales_rep_performance','mart_db_mart.production_efficiency','mart_db_mart.inventory_summary'];
+    const results=await Promise.all(tables.map(t=>q(`SELECT '${t}',count() FROM ${t}`).catch(()=>({data:[[t,0]]}))));
+    document.getElementById('tb-counts').innerHTML=results.map(r=>{
+      const row=r.data[0],tbl=row[0],cnt=parseInt(row[1]);
+      const badge=cnt>100000?'<span class="badge g">Large</span>':cnt>1000?'<span class="badge">OK</span>':'<span class="badge y">Small</span>';
+      return `<tr><td style="font-family:monospace;font-size:.75rem;color:#94a3b8">${tbl}</td><td style="font-weight:600">${fmt(cnt)}</td><td>${badge}</td></tr>`;
+    }).join('');
+    document.getElementById('l-counts').style.display='none';
+    document.getElementById('t-counts').style.display='table';
+    const total=results.reduce((s,r)=>s+parseInt(r.data[0][1]),0);
+    document.getElementById('kv-chtbl').textContent=tables.length;
+    document.getElementById('kv-trows').textContent=fmt(total);
+  }catch(e){errMsg('l-counts','Failed to load counts')}
+
+  // Pipeline runs
+  try{
+    const d=await q('SELECT run_at,dag_id,run_id,status FROM staging_db.pipeline_runs ORDER BY run_at DESC LIMIT 20');
+    const sc={success:'badge g',failed:'badge r',running:'badge y'};
+    document.getElementById('tb-pruns').innerHTML=d.data.map(r=>
+      `<tr><td style="font-size:.75rem;color:#94a3b8">${r[0].slice(0,19)}</td><td>${r[1]}</td><td style="font-family:monospace;font-size:.72rem">${r[2]}</td><td><span class="${sc[r[3]]||'badge'}">${r[3]}</span></td></tr>`
+    ).join('');
+    document.getElementById('l-pruns').style.display='none';
+    document.getElementById('t-pruns').style.display='table';
+    document.getElementById('kv-pruns').textContent=d.data.filter(r=>r[3]==='success').length;
+  }catch{document.getElementById('l-pruns').innerHTML='<div style="color:var(--muted);font-size:.8rem;padding:1rem;text-align:center">Start Airflow to see pipeline runs</div>';document.getElementById('kv-pruns').textContent='0'}
+}
+
+// â”€â”€ INIT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+window.addEventListener('DOMContentLoaded',()=>{
+  checkServices();
+  loadExec();
+  document.getElementById('tsLabel').textContent='Loaded '+new Date().toLocaleTimeString();
+  // Live feed auto-refresh every 10s when on kafka tab
+  setInterval(()=>{
+    if(document.getElementById('page-kafka').classList.contains('active')) loadLiveFeed();
+  },10000);
+  // Full refresh every 60s
+  setInterval(()=>{
+    document.getElementById('tsLabel').textContent='Auto-refreshed '+new Date().toLocaleTimeString();
+    loadExec();
+  },60000);
+});
+</script>
+</body>
+</html>

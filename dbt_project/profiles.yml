@@ -1,0 +1,13 @@
+mycola:
+  target: dev
+  outputs:
+    dev:
+      type: clickhouse
+      schema: mart_db
+      host: host.docker.internal
+      port: 9000
+      user: default
+      password: ""
+      secure: False
+      connect_timeout: 10
+      send_receive_timeout: 300

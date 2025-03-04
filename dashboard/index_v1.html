@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MyCola Analytics Platform</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<style>
+  :root {
+    --bg: #0d0f1a;
+    --card: rgba(255,255,255,0.04);
+    --border: rgba(255,255,255,0.08);
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --c1: #00d4ff; --c2: #ff6b6b; --c3: #ffd93d; --c4: #6bcb77;
+    --c5: #845ef7; --c6: #ff922b; --c7: #20c997; --c8: #f06595;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:'Segoe UI',system-ui,sans-serif; min-height:100vh; }
+
+  /* HEADER */
+  header {
+    background: linear-gradient(135deg,#1a1040 0%,#0d1b3e 50%,#0a2a1a 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 64px; position: sticky; top:0; z-index:100;
+    backdrop-filter: blur(20px);
+  }
+  .logo { display:flex; align-items:center; gap:12px; }
+  .logo-icon {
+    width:36px; height:36px; border-radius:10px;
+    background: linear-gradient(135deg,var(--c1),var(--c5));
+    display:flex; align-items:center; justify-content:center;
+    font-weight:900; font-size:16px; color:#fff;
+  }
+  .logo h1 { font-size:1.2rem; font-weight:700; letter-spacing:.5px; }
+  .logo span { color:var(--c1); }
+  .header-right { display:flex; align-items:center; gap:16px; }
+  .conn-status { display:flex; align-items:center; gap:6px; font-size:.8rem; color:var(--muted); }
+  .conn-dot { width:8px; height:8px; border-radius:50%; background:#ef4444; animation:pulse 2s infinite; }
+  .conn-dot.ok { background:var(--c4); }
+  .refresh-btn {
+    background: rgba(0,212,255,.1); border: 1px solid rgba(0,212,255,.3);
+    color:var(--c1); padding:6px 14px; border-radius:8px; cursor:pointer;
+    font-size:.8rem; transition:.2s;
+  }
+  .refresh-btn:hover { background:rgba(0,212,255,.2); }
+  .last-refresh { font-size:.75rem; color:var(--muted); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+  /* TABS */
+  .tabs { display:flex; gap:0; border-bottom:1px solid var(--border); background:rgba(0,0,0,.3); padding:0 2rem; }
+  .tab {
+    padding:14px 20px; cursor:pointer; font-size:.85rem; font-weight:500;
+    color:var(--muted); border-bottom:2px solid transparent; transition:.2s;
+    white-space:nowrap; display:flex; align-items:center; gap:6px;
+  }
+  .tab:hover { color:var(--text); }
+  .tab.active { color:var(--c1); border-bottom-color:var(--c1); }
+  .tab-icon { font-size:1rem; }
+
+  /* PAGE */
+  .page { display:none; padding:2rem; animation:fadein .3s ease; }
+  .page.active { display:block; }
+  @keyframes fadein { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+
+  /* KPI CARDS */
+  .kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:1rem; margin-bottom:1.5rem; }
+  .kpi-card {
+    background:var(--card); border:1px solid var(--border); border-radius:14px;
+    padding:1.25rem 1.5rem; transition:.25s; cursor:default;
+    position:relative; overflow:hidden;
+  }
+  .kpi-card::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:3px;
+    background:var(--accent,var(--c1));
+  }
+  .kpi-card:hover { transform:translateY(-3px); box-shadow:0 8px 32px rgba(0,0,0,.4); border-color:rgba(255,255,255,.15); }
+  .kpi-label { font-size:.75rem; color:var(--muted); text-transform:uppercase; letter-spacing:.8px; margin-bottom:.5rem; }
+  .kpi-value { font-size:1.8rem; font-weight:700; color:var(--text); line-height:1; }
+  .kpi-sub { font-size:.75rem; color:var(--muted); margin-top:.4rem; }
+  .kpi-icon { position:absolute; right:1.25rem; top:50%; transform:translateY(-50%); font-size:2.2rem; opacity:.15; }
+
+  /* CHART CARDS */
+  .chart-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; margin-bottom:1.5rem; }
+  .chart-grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:1.5rem; margin-bottom:1.5rem; }
+  .chart-grid-full { display:grid; grid-template-columns:1fr; gap:1.5rem; margin-bottom:1.5rem; }
+  .chart-grid-2-1 { display:grid; grid-template-columns:2fr 1fr; gap:1.5rem; margin-bottom:1.5rem; }
+  .chart-grid-1-2 { display:grid; grid-template-columns:1fr 2fr; gap:1.5rem; margin-bottom:1.5rem; }
+
+  .chart-card {
+    background:var(--card); border:1px solid var(--border); border-radius:14px;
+    padding:1.25rem; position:relative; overflow:hidden;
+  }
+  .chart-card:hover { border-color:rgba(255,255,255,.14); }
+  .chart-title { font-size:.85rem; font-weight:600; color:var(--text); margin-bottom:.25rem; }
+  .chart-subtitle { font-size:.75rem; color:var(--muted); margin-bottom:1rem; }
+  .chart-wrap { position:relative; }
+  .chart-wrap canvas { display:block; }
+
+  /* LOADING */
+  .loading {
+    display:flex; align-items:center; justify-content:center;
+    height:100%; min-height:180px; color:var(--muted); flex-direction:column; gap:12px;
+  }
+  .spinner {
+    width:32px; height:32px; border:3px solid rgba(255,255,255,.1);
+    border-top-color:var(--c1); border-radius:50%; animation:spin .7s linear infinite;
+  }
+  @keyframes spin { to{transform:rotate(360deg)} }
+
+  /* TABLE */
+  .data-table { width:100%; border-collapse:collapse; font-size:.82rem; }
+  .data-table th {
+    padding:10px 14px; text-align:left; color:var(--muted); font-weight:600;
+    font-size:.73rem; text-transform:uppercase; letter-spacing:.6px;
+    border-bottom:1px solid var(--border); cursor:pointer; white-space:nowrap;
+    user-select:none;
+  }
+  .data-table th:hover { color:var(--c1); }
+  .data-table td { padding:10px 14px; border-bottom:1px solid rgba(255,255,255,.04); }
+  .data-table tr:hover td { background:rgba(255,255,255,.03); }
+  .data-table tr:last-child td { border-bottom:none; }
+  .table-scroll { max-height:360px; overflow-y:auto; }
+  .table-scroll::-webkit-scrollbar { width:4px; }
+  .table-scroll::-webkit-scrollbar-track { background:transparent; }
+  .table-scroll::-webkit-scrollbar-thumb { background:rgba(255,255,255,.15); border-radius:2px; }
+  .rank { color:var(--c1); font-weight:700; }
+  .badge {
+    display:inline-block; padding:2px 8px; border-radius:20px; font-size:.7rem;
+    font-weight:600; background:rgba(0,212,255,.15); color:var(--c1);
+  }
+  .badge.green { background:rgba(107,203,119,.15); color:var(--c4); }
+  .badge.yellow { background:rgba(255,217,61,.15); color:var(--c3); }
+  .badge.red { background:rgba(255,107,107,.15); color:var(--c2); }
+
+  /* PROGRESS BAR */
+  .progress-bar { height:6px; background:rgba(255,255,255,.08); border-radius:3px; overflow:hidden; }
+  .progress-fill { height:100%; border-radius:3px; transition:.6s ease; }
+
+  /* ERROR */
+  .error-state {
+    display:flex; align-items:center; justify-content:center; min-height:180px;
+    color:var(--c2); flex-direction:column; gap:8px; font-size:.85rem;
+  }
+
+  /* SECTION TITLE */
+  .section-title {
+    font-size:1.1rem; font-weight:700; color:var(--text); margin-bottom:1rem;
+    display:flex; align-items:center; gap:8px;
+  }
+  .section-title::after {
+    content:''; flex:1; height:1px; background:var(--border);
+  }
+
+  @media (max-width:900px) {
+    .chart-grid-2,.chart-grid-3,.chart-grid-2-1,.chart-grid-1-2 { grid-template-columns:1fr; }
+    .kpi-grid { grid-template-columns:repeat(2,1fr); }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">M</div>
+    <h1>My<span>Cola</span> Analytics</h1>
+  </div>
+  <div class="header-right">
+    <div class="conn-status">
+      <div class="conn-dot" id="connDot"></div>
+      <span id="connText">Connecting…</span>
+    </div>
+    <span class="last-refresh" id="lastRefresh"></span>
+    <button class="refresh-btn" onclick="refreshAll()">⟳ Refresh</button>
+  </div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" onclick="showTab('exec')"><span class="tab-icon">📊</span> Executive Overview</div>
+  <div class="tab" onclick="showTab('sales')"><span class="tab-icon">💹</span> Sales Analytics</div>
+  <div class="tab" onclick="showTab('ops')"><span class="tab-icon">🏭</span> Production & Ops</div>
+  <div class="tab" onclick="showTab('fin')"><span class="tab-icon">💰</span> Inventory & Finance</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     TAB 1: EXECUTIVE OVERVIEW
+═══════════════════════════════════════════════════════ -->
+<div class="page active" id="page-exec">
+
+  <div class="kpi-grid" id="kpi-exec">
+    <div class="kpi-card" style="--accent:var(--c1)">
+      <div class="kpi-label">Revenue YTD (PKR)</div>
+      <div class="kpi-value" id="kv-rev">—</div>
+      <div class="kpi-sub" id="kv-rev-sub">Loading…</div>
+      <div class="kpi-icon">💰</div>
+    </div>
+    <div class="kpi-card" style="--accent:var(--c4)">
+      <div class="kpi-label">Orders YTD</div>
+      <div class="kpi-value" id="kv-orders">—</div>
+      <div class="kpi-sub" id="kv-orders-sub">Loading…</div>
+      <div class="kpi-icon">📦</div>
+    </div>
+    <div class="kpi-card" style="--accent:var(--c3)">
+      <div class="kpi-label">Avg Order Value (PKR)</div>
+      <div class="kpi-value" id="kv-aov">—</div>
+      <div class="kpi-sub" id="kv-aov-sub">Loading…</div>
+      <div class="kpi-icon">📈</div>
+    </div>
+    <div class="kpi-card" style="--accent:var(--c5)">
+      <div class="kpi-label">Top Territory</div>
+      <div class="kpi-value" id="kv-top-ter">—</div>
+      <div class="kpi-sub" id="kv-top-ter-sub">Loading…</div>
+      <div class="kpi-icon">🏆</div>
+    </div>
+  </div>
+
+  <div class="chart-grid-full">
+    <div class="chart-card">
+      <div class="chart-title">Monthly Revenue Trend</div>
+      <div class="chart-subtitle">Confirmed revenue across all territories · last 18 months</div>
+      <div class="chart-wrap" style="height:260px">
+        <div class="loading" id="load-revtrend"><div class="spinner"></div><span>Loading…</span></div>
+        <canvas id="chart-revtrend" style="display:none"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-grid-2">
+    <div class="chart-card">
+      <div class="chart-title">Orders by Territory · Monthly</div>
+      <div class="chart-subtitle">Last 12 months · stacked by territory</div>
+      <div class="chart-wrap" style="height:280px">
+        <div class="loading" id="load-ordter"><div class="spinner"></div><span>Loading…</span></div>
+        <canvas id="chart-ordter" style="display:none"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Revenue Share by Territory</div>
+      <div class="chart-subtitle">All-time confirmed revenue distribution</div>
+      <div class="chart-wrap" style="height:280px">
+        <div class="loading" id="load-revshare"><div class="spinner"></div><span>Loading…</span></div>
+        <canvas id="chart-revshare" style="display:none"></canvas>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     TAB 2: SALES ANALYTICS
+═══════════════════════════════════════════════════════ -->
+<div class="page" id="page-sales">
+
+  <div class="chart-grid-2-1">
+    <div class="chart-card">
+      <div class="chart-title">Top 15 Sales Reps by Revenue</div>
+      <div class="chart-subtitle">All-time confirmed revenue · hover for details</div>
+      <div class="chart-wrap" style="height:380px">
+        <div class="loading" id="load-topreps"><div class="spinner"></div><span>Loading…</span></div>
+        <canvas id="chart-topreps" style="display:none"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Confirmed vs Pending Orders</div>
+      <div class="chart-subtitle">Latest month split by territory</div>
+      <div class="chart-wrap" style="height:380px">
+        <div class="loading" id="load-ordstatus"><div class="spinner"></div><span>Loading…</span></div>
+        <canvas id="chart-ordstatus" style="display:none"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-grid-full">
+    <div class="chart-card">
+      <div class="chart-title">Monthly Orders per Territory</div>
+      <div class="chart-subtitle">Last 12 months · line per territory</div>
+      <div class="chart-wrap" style="height:260px">
+        <div class="loading" id="load-terlines"><div class="spinner"></div><span>Loading…</span></div>
+        <canvas id="chart-terlines" style="display:none"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-title">Sales Rep Leaderboard</div>
+    <div class="chart-subtitle">Click column headers to sort</div>
+    <div class="table-scroll">
+      <div class="loading" id="load-reptable"><div class="spinner"></div><span>Loading…</span></div>
+      <table class="data-table" id="rep-table" style="display:none">
+        <thead>
+          <tr>
+            <th onclick="sortTable(0)"># Rank</th>
+            <th onclick="sortTable(1)">Name</th>
+            <th onclick="sortTable(2)">Territory</th>
+            <th onclick="sortTable(3)">Orders</th>
+            <th onclick="sortTable(4)">Revenue (PKR)</th>
+            <th onclick="sortTable(5)">Avg Order Value</th>
+            <th>Share</th>
+          </tr>
+        </thead>
+        <tbody id="rep-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     TAB 3: PRODUCTION & OPS
+═══════════════════════════════════════════════════════ -->
+<div class="page" id="page-ops">
+
+  <div class="kpi-grid">
+    <div class="kpi-card" style="--accent:var(--c7)">
+      <div class="kpi-label">Avg OEE</div>
+      <div class="kpi-value" id="kv-oee">—</div>
+      <div class="kpi-sub">Overall Equipment Effectiveness</div>
+      <div class="kpi-icon">⚙️</div>
+    </div>
+    <div class="kpi-card" style="--accent:var(--c4)">
+      <div class="kpi-label">Total Good Units</div>
+      <div class="kpi-value" id="kv-good">—</div>
+      <div class="kpi-sub">All lines · all time</div>
+      <div class="kpi-icon">✅</div>
+    </div>
+    <div class="kpi-card" style="--accent:var(--c2)">
+      <div class="kpi-label">Total Defective Units</div>
+      <div class="kpi-value" id="kv-def">—</div>
+      <div class="kpi-sub">All lines · all time</div>
+      <div class="kpi-icon">⚠️</div>
+    </div>
+    <div class="kpi-card" style="--accent:var(--c3)">
+      <div class="kpi-label">Avg Efficiency</div>
+      <div class="kpi-value" id="kv-eff">—</div>
+      <div class="kpi-sub">Across all production lines</div>
+      <div class="kpi-icon">🏭</div>
+    </div>
+  </div>
+
+  <div class="chart-grid-2">
+    <div class="chart-card">
+      <div class="chart-title">Production Line Performance Radar</div>
+      <div class="chart-subtitle">OEE · Efficiency · Quality index — top 6 lines</div>
+      <div class="chart-wrap" style="height:320px">
+        <div class="loading" id="load-radar"><div class="spinner"></div><span>Loading…</span></div>
+        <canvas id="chart-radar" style="display:none"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Planned vs Actual vs Good Units</div>
+      <div class="chart-subtitle">Grouped by production line · all time</div>
+      <div class="chart-wrap" style="height:320px">
+        <div class="loading" id="load-pvsa"><div class="spinner"></div><span>Loading…</span></div>
+        <canvas id="chart-pvsa" style="display:none"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-grid-full">
+    <div class="chart-card">
+      <div class="chart-title">OEE Trend — Top 4 Production Lines</div>
+      <div class="chart-subtitle">Monthly OEE % over time</div>
+      <div class="chart-wrap" style="height:240px">
+        <div class="loading" id="load-oeetrend"><div class="spinner"></div><span>Loading…</span></div>
+        <canvas id="chart-oeetrend" style="display:none"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-title">Production Line Efficiency Ranking</div>
+    <div class="chart-subtitle">Avg OEE% per line with progress indicator</div>
+    <div id="eff-bars" style="padding:.5rem 0"></div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     TAB 4: INVENTORY & FINANCE
+═══════════════════════════════════════════════════════ -->
+<div class="page" id="page-fin">
+
+  <div class="kpi-grid">
+    <div class="kpi-card" style="--accent:var(--c2)">
+      <div class="kpi-label">Total AR Outstanding</div>
+      <div class="kpi-value" id="kv-ar">—</div>
+      <div class="kpi-sub" id="kv-ar-sub">Loading…</div>
+      <div class="kpi-icon">📋</div>
+    </div>
+    <div class="kpi-card" style="--accent:var(--c6)">
+      <div class="kpi-label">Total AP Outstanding</div>
+      <div class="kpi-value" id="kv-ap">—</div>
+      <div class="kpi-sub" id="kv-ap-sub">Loading…</div>
+      <div class="kpi-icon">🧾</div>
+    </div>
+    <div class="kpi-card" style="--accent:var(--c5)">
+      <div class="kpi-label">Inventory Value (PKR)</div>
+      <div class="kpi-value" id="kv-invval">—</div>
+      <div class="kpi-sub" id="kv-invval-sub">Loading…</div>
+      <div class="kpi-icon">🏪</div>
+    </div>
+    <div class="kpi-card" style="--accent:var(--c3)">
+      <div class="kpi-label">Avg Days Overdue</div>
+      <div class="kpi-value" id="kv-overdue">—</div>
+      <div class="kpi-sub">Accounts receivable</div>
+      <div class="kpi-icon">⏰</div>
+    </div>
+  </div>
+
+  <div class="chart-grid-2">
+    <div class="chart-card">
+      <div class="chart-title">Top 10 SKUs by Inventory Value</div>
+      <div class="chart-subtitle">Current stock × avg unit cost</div>
+      <div class="chart-wrap" style="height:320px">
+        <div class="loading" id="load-invval"><div class="spinner"></div><span>Loading…</span></div>
+        <canvas id="chart-invval" style="display:none"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Accounts Receivable by Status</div>
+      <div class="chart-subtitle">Invoice amount split by status</div>
+      <div class="chart-wrap" style="height:320px">
+        <div class="loading" id="load-ardonut"><div class="spinner"></div><span>Loading…</span></div>
+        <canvas id="chart-ardonut" style="display:none"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-grid-2">
+    <div class="chart-card">
+      <div class="chart-title">Stock vs Outbound Volume</div>
+      <div class="chart-subtitle">Top 20 SKUs — bubble size = unit cost</div>
+      <div class="chart-wrap" style="height:300px">
+        <div class="loading" id="load-scatter"><div class="spinner"></div><span>Loading…</span></div>
+        <canvas id="chart-scatter" style="display:none"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Inventory by Warehouse</div>
+      <div class="chart-subtitle">Total stock value per warehouse</div>
+      <div class="chart-wrap" style="height:300px">
+        <div class="loading" id="load-whbar"><div class="spinner"></div><span>Loading…</span></div>
+        <canvas id="chart-whbar" style="display:none"></canvas>
+      </div>
+    </div>
+  </div>
+
+</div>
+<script>
+// ─── COLOURS & HELPERS ────────────────────────────────────────────────────────
+const COLORS = ['#00d4ff','#ff6b6b','#ffd93d','#6bcb77','#845ef7','#ff922b','#20c997','#f06595','#74c0fc','#a9e34b'];
+const CH = 'http://localhost:8123';
+const charts = {};
+
+async function query(sql) {
+  const url = `${CH}/?query=${encodeURIComponent(sql)}&default_format=JSONCompact`;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.json();
+}
+
+function fmt(n, decimals=0) {
+  if (n == null || isNaN(n)) return '—';
+  if (n >= 1e9) return (n/1e9).toFixed(1)+'B';
+  if (n >= 1e6) return (n/1e6).toFixed(1)+'M';
+  if (n >= 1e3) return (n/1e3).toFixed(1)+'K';
+  return Number(n).toFixed(decimals).toLocaleString();
+}
+
+function show(canvasId, loadId) {
+  document.getElementById(loadId).style.display = 'none';
+  document.getElementById(canvasId).style.display = 'block';
+}
+
+function err(loadId, msg) {
+  const el = document.getElementById(loadId);
+  el.innerHTML = `<div class="error-state">⚠️ ${msg}</div>`;
+}
+
+function mkGradient(ctx, color, alpha1=0.4, alpha2=0.02) {
+  const g = ctx.createLinearGradient(0, 0, 0, ctx.canvas.height);
+  g.addColorStop(0, color.replace(')', `,${alpha1})`).replace('rgb','rgba'));
+  g.addColorStop(1, color.replace(')', `,${alpha2})`).replace('rgb','rgba'));
+  return g;
+}
+
+function hexToRgba(hex, a) {
+  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+function makeGrad(ctx, hex) {
+  const g = ctx.createLinearGradient(0, 0, 0, ctx.canvas.height || 300);
+  g.addColorStop(0, hexToRgba(hex, 0.5));
+  g.addColorStop(1, hexToRgba(hex, 0.02));
+  return g;
+}
+
+const darkTheme = {
+  color: '#94a3b8',
+  grid: { color: 'rgba(255,255,255,0.05)' },
+  ticks: { color: '#64748b' }
+};
+
+Chart.defaults.color = '#94a3b8';
+Chart.defaults.borderColor = 'rgba(255,255,255,0.06)';
+
+// ─── TAB SWITCHING ────────────────────────────────────────────────────────────
+function showTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    const names = ['exec','sales','ops','fin'];
+    t.classList.toggle('active', names[i] === name);
+  });
+  document.querySelectorAll('.page').forEach(p => {
+    p.classList.toggle('active', p.id === 'page-' + name);
+  });
+  if (name === 'sales' && !charts['topreps']) loadSales();
+  if (name === 'ops' && !charts['radar']) loadOps();
+  if (name === 'fin' && !charts['invval']) loadFin();
+}
+
+// ─── CONNECTION CHECK ─────────────────────────────────────────────────────────
+async function checkConn() {
+  try {
+    await query('SELECT 1');
+    document.getElementById('connDot').classList.add('ok');
+    document.getElementById('connText').textContent = 'Connected';
+  } catch {
+    document.getElementById('connText').textContent = 'Offline';
+  }
+}
+
+// ─── REFRESH ──────────────────────────────────────────────────────────────────
+function refreshAll() {
+  Object.values(charts).forEach(c => c.destroy());
+  Object.keys(charts).forEach(k => delete charts[k]);
+  loadExec();
+  const active = document.querySelector('.page.active').id.replace('page-','');
+  if (active === 'sales') loadSales();
+  if (active === 'ops') loadOps();
+  if (active === 'fin') loadFin();
+  document.getElementById('lastRefresh').textContent = 'Refreshed ' + new Date().toLocaleTimeString();
+}
+
+// ─── SORT TABLE ───────────────────────────────────────────────────────────────
+let sortCol = 4, sortDir = -1;
+function sortTable(col) {
+  if (sortCol === col) sortDir *= -1; else { sortCol = col; sortDir = -1; }
+  const tbody = document.getElementById('rep-tbody');
+  const rows = Array.from(tbody.querySelectorAll('tr'));
+  rows.sort((a,b) => {
+    const av = a.cells[col].dataset.val || a.cells[col].textContent;
+    const bv = b.cells[col].dataset.val || b.cells[col].textContent;
+    return sortDir * (isNaN(av) ? av.localeCompare(bv) : Number(av)-Number(bv));
+  });
+  rows.forEach(r => tbody.appendChild(r));
+}
+// ─── EXEC TAB ─────────────────────────────────────────────────────────────────
+async function loadExec() {
+  try {
+    // KPIs
+    const k = await query(`SELECT sum(confirmed_revenue_pkr), sum(confirmed_orders), avg(avg_order_value_pkr), argMax(territory_id, confirmed_revenue_pkr), sum(total_revenue_pkr) FROM mart_db_mart.monthly_revenue_by_territory WHERE order_month_start >= toDate('2025-01-01')`);
+    const row = k.data[0];
+    document.getElementById('kv-rev').textContent = 'PKR ' + fmt(row[0]);
+    document.getElementById('kv-rev-sub').textContent = 'Total confirmed · 2025 YTD';
+    document.getElementById('kv-orders').textContent = fmt(row[1]);
+    document.getElementById('kv-orders-sub').textContent = 'Confirmed orders this year';
+    document.getElementById('kv-aov').textContent = 'PKR ' + fmt(row[2]);
+    document.getElementById('kv-aov-sub').textContent = 'Across all territories';
+    document.getElementById('kv-top-ter').textContent = row[3];
+    document.getElementById('kv-top-ter-sub').textContent = 'Highest revenue territory';
+  } catch(e) { console.error('KPI error', e); }
+
+  // Revenue Trend
+  try {
+    const d = await query(`SELECT order_month_start, sum(confirmed_revenue_pkr) as rev FROM mart_db_mart.monthly_revenue_by_territory WHERE order_month_start >= toDate('2024-01-01') GROUP BY order_month_start ORDER BY order_month_start`);
+    const labels = d.data.map(r => r[0].slice(0,7));
+    const vals = d.data.map(r => parseFloat(r[1]));
+    show('chart-revtrend','load-revtrend');
+    const ctx = document.getElementById('chart-revtrend').getContext('2d');
+    charts['revtrend'] = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Confirmed Revenue (PKR)',
+          data: vals,
+          borderColor: '#00d4ff',
+          backgroundColor: makeGrad(ctx, '#00d4ff'),
+          borderWidth: 2.5,
+          pointBackgroundColor: '#00d4ff',
+          pointRadius: 3,
+          pointHoverRadius: 6,
+          fill: true,
+          tension: 0.4
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ' PKR ' + fmt(c.raw) } } },
+        scales: {
+          x: { grid: darkTheme.grid, ticks: { ...darkTheme.ticks, maxTicksLimit: 12 } },
+          y: { grid: darkTheme.grid, ticks: { ...darkTheme.ticks, callback: v => 'PKR '+fmt(v) } }
+        }
+      }
+    });
+  } catch(e) { err('load-revtrend', 'Failed to load revenue trend'); }
+
+  // Orders by Territory stacked bar
+  try {
+    const d = await query(`SELECT order_month_start, territory_id, confirmed_orders FROM mart_db_mart.monthly_revenue_by_territory WHERE order_month_start >= toDate('2025-01-01') ORDER BY order_month_start, territory_id`);
+    const monthSet = [...new Set(d.data.map(r=>r[0].slice(0,7)))].sort();
+    const terSet = [...new Set(d.data.map(r=>r[1]))].sort();
+    const byTer = {};
+    d.data.forEach(r => { const m=r[0].slice(0,7),t=r[1]; if(!byTer[t]) byTer[t]={}; byTer[t][m]=parseInt(r[2])||0; });
+    show('chart-ordter','load-ordter');
+    const ctx2 = document.getElementById('chart-ordter').getContext('2d');
+    charts['ordter'] = new Chart(ctx2, {
+      type: 'bar',
+      data: {
+        labels: monthSet,
+        datasets: terSet.map((t,i) => ({
+          label: t,
+          data: monthSet.map(m => byTer[t]?.[m] || 0),
+          backgroundColor: hexToRgba(COLORS[i % COLORS.length], 0.75),
+          borderColor: COLORS[i % COLORS.length],
+          borderWidth: 1,
+          borderRadius: 2
+        }))
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { labels: { color:'#94a3b8', boxWidth:12 } } },
+        scales: {
+          x: { stacked:true, grid: darkTheme.grid, ticks: darkTheme.ticks },
+          y: { stacked:true, grid: darkTheme.grid, ticks: { ...darkTheme.ticks, callback: v => fmt(v) } }
+        }
+      }
+    });
+  } catch(e) { err('load-ordter','Failed to load orders chart'); }
+
+  // Revenue share donut
+  try {
+    const d = await query(`SELECT territory_id, sum(confirmed_revenue_pkr) as rev FROM mart_db_mart.monthly_revenue_by_territory GROUP BY territory_id ORDER BY rev DESC`);
+    show('chart-revshare','load-revshare');
+    const ctx3 = document.getElementById('chart-revshare').getContext('2d');
+    charts['revshare'] = new Chart(ctx3, {
+      type: 'doughnut',
+      data: {
+        labels: d.data.map(r=>r[0]),
+        datasets: [{ data: d.data.map(r=>parseFloat(r[1])), backgroundColor: COLORS.map(c=>hexToRgba(c,0.85)), borderColor: '#0d0f1a', borderWidth: 3, hoverOffset: 8 }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, cutout: '65%',
+        plugins: {
+          legend: { position:'right', labels:{ color:'#94a3b8', boxWidth:12, padding:14 } },
+          tooltip: { callbacks: { label: c => ` ${c.label}: PKR ${fmt(c.raw)}` } }
+        }
+      }
+    });
+  } catch(e) { err('load-revshare','Failed to load territory share'); }
+}
+// ─── SALES TAB ────────────────────────────────────────────────────────────────
+async function loadSales() {
+
+  // Top 15 Reps horizontal bar
+  try {
+    const d = await query(`SELECT rep_name, territory_id, sum(confirmed_revenue_pkr) as rev, sum(confirmed_orders) as orders FROM mart_db_mart.sales_rep_performance GROUP BY rep_name, territory_id ORDER BY rev DESC LIMIT 15`);
+    show('chart-topreps','load-topreps');
+    const ctx = document.getElementById('chart-topreps').getContext('2d');
+    const labels = d.data.map(r => r[0]);
+    const vals = d.data.map(r => parseFloat(r[2]));
+    charts['topreps'] = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Revenue (PKR)',
+          data: vals,
+          backgroundColor: vals.map((_,i) => hexToRgba(COLORS[i % COLORS.length], 0.75)),
+          borderColor: vals.map((_,i) => COLORS[i % COLORS.length]),
+          borderWidth: 1, borderRadius: 4
+        }]
+      },
+      options: {
+        indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: c => ' PKR ' + fmt(c.raw) + '  |  ' + d.data[c.dataIndex][1] } }
+        },
+        scales: {
+          x: { grid: darkTheme.grid, ticks: { ...darkTheme.ticks, callback: v => 'PKR '+fmt(v) } },
+          y: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 11 } } }
+        }
+      }
+    });
+  } catch(e) { err('load-topreps','Failed to load sales reps'); }
+
+  // Confirmed vs Pending per territory (latest month)
+  try {
+    const d = await query(`SELECT territory_id, sum(confirmed_orders) as conf, sum(pending_orders) as pend FROM mart_db_mart.monthly_revenue_by_territory WHERE order_month_start = (SELECT max(order_month_start) FROM mart_db_mart.monthly_revenue_by_territory) GROUP BY territory_id ORDER BY territory_id`);
+    show('chart-ordstatus','load-ordstatus');
+    const ctx = document.getElementById('chart-ordstatus').getContext('2d');
+    charts['ordstatus'] = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: d.data.map(r=>r[0]),
+        datasets: [
+          { label: 'Confirmed', data: d.data.map(r=>parseInt(r[1])), backgroundColor: hexToRgba('#6bcb77',0.75), borderColor:'#6bcb77', borderWidth:1, borderRadius:4 },
+          { label: 'Pending',   data: d.data.map(r=>parseInt(r[2])), backgroundColor: hexToRgba('#ffd93d',0.75), borderColor:'#ffd93d', borderWidth:1, borderRadius:4 }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { labels: { color:'#94a3b8', boxWidth:12 } } },
+        scales: {
+          x: { grid: darkTheme.grid, ticks: darkTheme.ticks },
+          y: { grid: darkTheme.grid, ticks: darkTheme.ticks }
+        }
+      }
+    });
+  } catch(e) { err('load-ordstatus','Failed to load order status'); }
+
+  // Monthly orders per territory — multi-line
+  try {
+    const d = await query(`SELECT order_month_start, territory_id, confirmed_orders FROM mart_db_mart.monthly_revenue_by_territory WHERE order_month_start >= toDate('2025-01-01') ORDER BY order_month_start, territory_id`);
+    const months = [...new Set(d.data.map(r=>r[0].slice(0,7)))].sort();
+    const ters   = [...new Set(d.data.map(r=>r[1]))].sort();
+    const byTer  = {};
+    d.data.forEach(r => { const m=r[0].slice(0,7),t=r[1]; if(!byTer[t]) byTer[t]={}; byTer[t][m]=parseInt(r[2])||0; });
+    show('chart-terlines','load-terlines');
+    const ctx = document.getElementById('chart-terlines').getContext('2d');
+    charts['terlines'] = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: months,
+        datasets: ters.map((t,i) => ({
+          label: t,
+          data: months.map(m => byTer[t]?.[m]||0),
+          borderColor: COLORS[i % COLORS.length],
+          backgroundColor: hexToRgba(COLORS[i % COLORS.length], 0.06),
+          borderWidth: 2, pointRadius: 2, pointHoverRadius: 5,
+          fill: false, tension: 0.35
+        }))
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { labels: { color:'#94a3b8', boxWidth:12 } } },
+        scales: {
+          x: { grid: darkTheme.grid, ticks: darkTheme.ticks },
+          y: { grid: darkTheme.grid, ticks: darkTheme.ticks }
+        }
+      }
+    });
+  } catch(e) { err('load-terlines','Failed to load territory lines'); }
+
+  // Leaderboard table
+  try {
+    const d = await query(`SELECT rep_name, territory_id, sum(confirmed_orders) as orders, sum(confirmed_revenue_pkr) as rev, avg(avg_order_value_pkr) as aov FROM mart_db_mart.sales_rep_performance GROUP BY rep_name, territory_id ORDER BY rev DESC LIMIT 50`);
+    const total = d.data.reduce((s,r)=>s+parseFloat(r[3]),0);
+    const tbody = document.getElementById('rep-tbody');
+    tbody.innerHTML = d.data.map((r,i) => {
+      const rev = parseFloat(r[3]), share = ((rev/total)*100).toFixed(1);
+      return `<tr>
+        <td class="rank">${i+1}</td>
+        <td>${r[0]}</td>
+        <td><span class="badge">${r[1]}</span></td>
+        <td data-val="${r[2]}">${fmt(r[2])}</td>
+        <td data-val="${rev}">PKR ${fmt(rev)}</td>
+        <td data-val="${r[4]}">PKR ${fmt(parseFloat(r[4]))}</td>
+        <td><div style="display:flex;align-items:center;gap:8px">
+          <div class="progress-bar" style="width:80px"><div class="progress-fill" style="width:${Math.min(share*5,100)}%;background:${COLORS[i%COLORS.length]}"></div></div>
+          <span style="font-size:.75rem;color:#94a3b8">${share}%</span>
+        </div></td>
+      </tr>`;
+    }).join('');
+    document.getElementById('load-reptable').style.display = 'none';
+    document.getElementById('rep-table').style.display = 'table';
+  } catch(e) { err('load-reptable','Failed to load leaderboard'); }
+}
+// ─── OPS TAB ──────────────────────────────────────────────────────────────────
+async function loadOps() {
+
+  // KPIs
+  try {
+    const d = await query(`SELECT avg(avg_oee_pct), sum(total_good_units), sum(total_defective_units), avg(avg_efficiency_pct) FROM mart_db_mart.production_efficiency`);
+    const r = d.data[0];
+    document.getElementById('kv-oee').textContent  = parseFloat(r[0]).toFixed(1)+'%';
+    document.getElementById('kv-good').textContent = fmt(r[1]);
+    document.getElementById('kv-def').textContent  = fmt(r[2]);
+    document.getElementById('kv-eff').textContent  = parseFloat(r[3]).toFixed(1)+'%';
+  } catch(e) {}
+
+  // Radar — top 6 lines OEE/Efficiency/Quality
+  try {
+    const d = await query(`SELECT line_name, avg(avg_oee_pct) as oee, avg(avg_efficiency_pct) as eff, (1 - avg(avg_defect_rate_pct)/100)*100 as quality FROM mart_db_mart.production_efficiency GROUP BY line_name ORDER BY oee DESC LIMIT 6`);
+    show('chart-radar','load-radar');
+    const ctx = document.getElementById('chart-radar').getContext('2d');
+    charts['radar'] = new Chart(ctx, {
+      type: 'radar',
+      data: {
+        labels: ['OEE %','Efficiency %','Quality %'],
+        datasets: d.data.map((r,i) => ({
+          label: r[0].length > 22 ? r[0].slice(0,22)+'…' : r[0],
+          data: [parseFloat(r[1]), parseFloat(r[2]), parseFloat(r[3])],
+          borderColor: COLORS[i],
+          backgroundColor: hexToRgba(COLORS[i], 0.1),
+          pointBackgroundColor: COLORS[i],
+          borderWidth: 2, pointRadius: 3
+        }))
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        scales: {
+          r: {
+            min: 60, max: 100,
+            grid: { color:'rgba(255,255,255,0.08)' },
+            angleLines: { color:'rgba(255,255,255,0.08)' },
+            ticks: { color:'#64748b', backdropColor:'transparent', stepSize: 10 },
+            pointLabels: { color:'#94a3b8', font:{ size:11 } }
+          }
+        },
+        plugins: { legend: { labels:{ color:'#94a3b8', boxWidth:12, font:{ size:10 } } } }
+      }
+    });
+  } catch(e) { err('load-radar','Failed to load radar chart'); }
+
+  // Planned vs Actual vs Good grouped bar
+  try {
+    const d = await query(`SELECT line_name, sum(total_planned_units) as planned, sum(total_actual_units) as actual, sum(total_good_units) as good FROM mart_db_mart.production_efficiency GROUP BY line_name ORDER BY planned DESC LIMIT 8`);
+    show('chart-pvsa','load-pvsa');
+    const ctx = document.getElementById('chart-pvsa').getContext('2d');
+    const labels = d.data.map(r => r[0].length>18 ? r[0].slice(0,18)+'…' : r[0]);
+    charts['pvsa'] = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          { label:'Planned',  data: d.data.map(r=>parseInt(r[1])), backgroundColor:hexToRgba('#845ef7',0.7), borderColor:'#845ef7', borderWidth:1, borderRadius:3 },
+          { label:'Actual',   data: d.data.map(r=>parseInt(r[2])), backgroundColor:hexToRgba('#00d4ff',0.7), borderColor:'#00d4ff', borderWidth:1, borderRadius:3 },
+          { label:'Good',     data: d.data.map(r=>parseInt(r[3])), backgroundColor:hexToRgba('#6bcb77',0.7), borderColor:'#6bcb77', borderWidth:1, borderRadius:3 }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { labels:{ color:'#94a3b8', boxWidth:12 } } },
+        scales: {
+          x: { grid:{display:false}, ticks:{ color:'#64748b', font:{size:10} } },
+          y: { grid: darkTheme.grid, ticks:{ ...darkTheme.ticks, callback: v=>''+fmt(v) } }
+        }
+      }
+    });
+  } catch(e) { err('load-pvsa','Failed to load units chart'); }
+
+  // OEE trend top 4 lines
+  try {
+    const d = await query(`SELECT run_month_start, line_name, avg_oee_pct FROM mart_db_mart.production_efficiency WHERE line_name IN (SELECT line_name FROM mart_db_mart.production_efficiency GROUP BY line_name ORDER BY avg(avg_oee_pct) DESC LIMIT 4) AND run_month_start >= toDate('2024-01-01') ORDER BY run_month_start, line_name`);
+    const months = [...new Set(d.data.map(r=>r[0].slice(0,7)))].sort();
+    const lines  = [...new Set(d.data.map(r=>r[1]))];
+    const byLine = {};
+    d.data.forEach(r => { const m=r[0].slice(0,7),l=r[1]; if(!byLine[l]) byLine[l]={}; byLine[l][m]=parseFloat(r[2])||0; });
+    show('chart-oeetrend','load-oeetrend');
+    const ctx = document.getElementById('chart-oeetrend').getContext('2d');
+    charts['oeetrend'] = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: months,
+        datasets: lines.map((l,i) => ({
+          label: l.length>20 ? l.slice(0,20)+'…' : l,
+          data: months.map(m => byLine[l]?.[m]||null),
+          borderColor: COLORS[i], backgroundColor:'transparent',
+          borderWidth: 2.5, pointRadius: 2.5, pointHoverRadius: 5,
+          tension: 0.35, spanGaps: true
+        }))
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { labels:{ color:'#94a3b8', boxWidth:12 } } },
+        scales: {
+          x: { grid: darkTheme.grid, ticks:{ ...darkTheme.ticks, maxTicksLimit:12 } },
+          y: { min:50, grid: darkTheme.grid, ticks:{ ...darkTheme.ticks, callback: v=>v+'%' } }
+        }
+      }
+    });
+  } catch(e) { err('load-oeetrend','Failed to load OEE trend'); }
+
+  // Progress bars for each line
+  try {
+    const d = await query(`SELECT line_name, avg(avg_oee_pct) as oee FROM mart_db_mart.production_efficiency GROUP BY line_name ORDER BY oee DESC`);
+    const max = parseFloat(d.data[0][2] || d.data[0][1]);
+    const container = document.getElementById('eff-bars');
+    container.innerHTML = d.data.map((r,i) => {
+      const name = r[0], oee = parseFloat(r[1]).toFixed(1);
+      const pct = ((parseFloat(r[1])/100)*100).toFixed(0);
+      return `<div style="display:flex;align-items:center;gap:12px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.04)">
+        <div style="width:200px;font-size:.8rem;color:#94a3b8;flex-shrink:0;text-overflow:ellipsis;overflow:hidden;white-space:nowrap" title="${name}">${name}</div>
+        <div class="progress-bar" style="flex:1">
+          <div class="progress-fill" style="width:${pct}%;background:linear-gradient(90deg,${COLORS[i%COLORS.length]},${COLORS[(i+3)%COLORS.length]})"></div>
+        </div>
+        <div style="width:52px;text-align:right;font-size:.85rem;font-weight:600;color:${COLORS[i%COLORS.length]}">${oee}%</div>
+      </div>`;
+    }).join('');
+  } catch(e) {}
+}
+// ─── FINANCE TAB ──────────────────────────────────────────────────────────────
+async function loadFin() {
+
+  // KPIs
+  try {
+    const ar = await query(`SELECT sum(outstanding_pkr), count(), avg(days_overdue) FROM mart_db.fact_accounts_receivable WHERE status != 'Paid'`);
+    const ap = await query(`SELECT sum(outstanding_pkr) FROM mart_db.fact_accounts_payable WHERE status != 'Paid'`);
+    const inv = await query(`SELECT sum(current_stock * avg_unit_cost_pkr) FROM mart_db_mart.inventory_summary`);
+    const ar0 = ar.data[0];
+    document.getElementById('kv-ar').textContent = 'PKR ' + fmt(ar0[0]);
+    document.getElementById('kv-ar-sub').textContent = fmt(ar0[1]) + ' open invoices';
+    document.getElementById('kv-ap').textContent = 'PKR ' + fmt(ap.data[0][0]);
+    document.getElementById('kv-ap-sub').textContent = 'Unpaid supplier bills';
+    document.getElementById('kv-invval').textContent = 'PKR ' + fmt(inv.data[0][0]);
+    document.getElementById('kv-invval-sub').textContent = 'Total inventory at cost';
+    document.getElementById('kv-overdue').textContent = parseFloat(ar0[2]).toFixed(0) + ' days';
+  } catch(e) {}
+
+  // Top 10 SKUs by inventory value
+  try {
+    const d = await query(`SELECT sku_name, sum(current_stock) as stock, sum(current_stock * avg_unit_cost_pkr) as value FROM mart_db_mart.inventory_summary GROUP BY sku_name ORDER BY value DESC LIMIT 10`);
+    show('chart-invval','load-invval');
+    const ctx = document.getElementById('chart-invval').getContext('2d');
+    const labels = d.data.map(r => r[0].length>20 ? r[0].slice(0,20)+'…' : r[0]);
+    charts['invval'] = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Inventory Value (PKR)',
+          data: d.data.map(r=>parseFloat(r[2])),
+          backgroundColor: d.data.map((_,i)=>hexToRgba(COLORS[i%COLORS.length],0.75)),
+          borderColor: d.data.map((_,i)=>COLORS[i%COLORS.length]),
+          borderWidth: 1, borderRadius: 4
+        }]
+      },
+      options: {
+        indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display:false },
+          tooltip: { callbacks: { label: c => ' PKR ' + fmt(c.raw) } }
+        },
+        scales: {
+          x: { grid: darkTheme.grid, ticks:{ ...darkTheme.ticks, callback: v=>'PKR '+fmt(v) } },
+          y: { grid:{ display:false }, ticks:{ color:'#94a3b8', font:{size:10} } }
+        }
+      }
+    });
+  } catch(e) { err('load-invval','Failed to load inventory chart'); }
+
+  // AR Donut
+  try {
+    const d = await query(`SELECT status, count() as cnt, sum(invoice_amount_pkr) as amount FROM mart_db.fact_accounts_receivable GROUP BY status ORDER BY amount DESC`);
+    show('chart-ardonut','load-ardonut');
+    const ctx = document.getElementById('chart-ardonut').getContext('2d');
+    const statusColors = { 'Paid':'#6bcb77', 'Outstanding':'#ffd93d', 'Overdue':'#ff6b6b', 'Partial':'#ff922b' };
+    charts['ardonut'] = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: d.data.map(r=>r[0]),
+        datasets: [{
+          data: d.data.map(r=>parseFloat(r[2])),
+          backgroundColor: d.data.map(r=>hexToRgba(statusColors[r[0]]||COLORS[0],0.85)),
+          borderColor: '#0d0f1a', borderWidth: 3, hoverOffset: 8
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, cutout:'62%',
+        plugins: {
+          legend: { position:'right', labels:{ color:'#94a3b8', boxWidth:12, padding:14 } },
+          tooltip: { callbacks: {
+            label: c => ` ${c.label}: PKR ${fmt(c.raw)}`,
+            afterLabel: c => ` Count: ${fmt(d.data[c.dataIndex][1])}`
+          }}
+        }
+      }
+    });
+  } catch(e) { err('load-ardonut','Failed to load AR chart'); }
+
+  // Scatter: stock vs outbound
+  try {
+    const d = await query(`SELECT sku_name, sum(current_stock) as stock, sum(total_outbound) as outbound, avg(avg_unit_cost_pkr) as cost FROM mart_db_mart.inventory_summary GROUP BY sku_name HAVING stock > 0 ORDER BY outbound DESC LIMIT 20`);
+    show('chart-scatter','load-scatter');
+    const ctx = document.getElementById('chart-scatter').getContext('2d');
+    charts['scatter'] = new Chart(ctx, {
+      type: 'bubble',
+      data: {
+        datasets: [{
+          label: 'SKU',
+          data: d.data.map((r,i) => ({
+            x: parseFloat(r[1]),
+            y: parseFloat(r[2]),
+            r: Math.max(4, Math.min(24, parseFloat(r[3])/500)),
+            label: r[0]
+          })),
+          backgroundColor: d.data.map((_,i)=>hexToRgba(COLORS[i%COLORS.length],0.6)),
+          borderColor: d.data.map((_,i)=>COLORS[i%COLORS.length]),
+          borderWidth: 1.5
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display:false },
+          tooltip: { callbacks: {
+            label: c => {
+              const pt = c.raw;
+              return ` ${pt.label} | Stock: ${fmt(pt.x)} | Out: ${fmt(pt.y)}`;
+            }
+          }}
+        },
+        scales: {
+          x: { title:{ display:true, text:'Current Stock', color:'#64748b' }, grid: darkTheme.grid, ticks: darkTheme.ticks },
+          y: { title:{ display:true, text:'Total Outbound', color:'#64748b' }, grid: darkTheme.grid, ticks: darkTheme.ticks }
+        }
+      }
+    });
+  } catch(e) { err('load-scatter','Failed to load scatter chart'); }
+
+  // Inventory value by warehouse
+  try {
+    const d = await query(`SELECT warehouse_id, sum(current_stock * avg_unit_cost_pkr) as value, sum(current_stock) as units FROM mart_db_mart.inventory_summary GROUP BY warehouse_id ORDER BY value DESC`);
+    show('chart-whbar','load-whbar');
+    const ctx = document.getElementById('chart-whbar').getContext('2d');
+    charts['whbar'] = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: d.data.map(r=>r[0]),
+        datasets: [
+          {
+            label: 'Inventory Value (PKR)',
+            data: d.data.map(r=>parseFloat(r[1])),
+            backgroundColor: d.data.map((_,i)=>hexToRgba(COLORS[i%COLORS.length],0.75)),
+            borderColor: d.data.map((_,i)=>COLORS[i%COLORS.length]),
+            borderWidth:1, borderRadius:5, yAxisID:'y'
+          }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display:false },
+          tooltip: { callbacks: { label: c=>' PKR '+fmt(c.raw) } }
+        },
+        scales: {
+          x: { grid:{display:false}, ticks:{ color:'#94a3b8' } },
+          y: { grid: darkTheme.grid, ticks:{ ...darkTheme.ticks, callback:v=>'PKR '+fmt(v) } }
+        }
+      }
+    });
+  } catch(e) { err('load-whbar','Failed to load warehouse chart'); }
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  checkConn();
+  loadExec();
+  document.getElementById('lastRefresh').textContent = 'Loaded ' + new Date().toLocaleTimeString();
+  // Auto-refresh every 60 seconds
+  setInterval(refreshAll, 60000);
+});
+</script>
+</body>
+</html>
