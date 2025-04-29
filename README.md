@@ -808,7 +808,7 @@ This caps ClickHouse at 4 GB, leaving headroom for OS and other tools.
 | 3: Airflow | ~3 hours |
 | **Total for full stack** | **~1.5 working days** |
 
-This is a complete, working, production-grade data engineering platform on your local machine.
+This is a complete, working, production-grade data engineering platform on my local machine.
 
 ---
 
