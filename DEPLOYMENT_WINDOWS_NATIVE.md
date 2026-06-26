@@ -69,7 +69,7 @@ Data Generator → Files → Airflow → ClickHouse (staging) → dbt → ClickH
 
 ---
 
-## Phase 2: Add Streaming (Week 5-6)
+## Phase 2: Add Streaming 
 
 ```
 Data Generator → Kafka → Python Consumer → ClickHouse (staging) → dbt → Mart
