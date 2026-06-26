@@ -23,7 +23,7 @@
 
 We'll build the platform **incrementally** in working phases:
 
-### Phase 1A: Data Ingestion → Storage (Week 1-2)
+### Phase 1A: Data Ingestion → Storage 
 
 ```
 Data Generator → CSV/JSON Files → Python ETL Scripts → ClickHouse
@@ -39,7 +39,7 @@ Data Generator → CSV/JSON Files → Python ETL Scripts → ClickHouse
 - Gets you a working analytical warehouse quickly
 - You can start writing SQL queries and building dashboards immediately
 
-### Phase 1B: Add Orchestration (Week 3)
+### Phase 1B: Add Orchestration 
 
 ```
 Data Generator → Files → Airflow DAG → Python ETL → ClickHouse
@@ -53,7 +53,7 @@ Data Generator → Files → Airflow DAG → Python ETL → ClickHouse
 - Prepares for incremental loads
 - Adds observability (DAG run history, logs)
 
-### Phase 1C: Add Transformation Layer (Week 4)
+### Phase 1C: Add Transformation Layer 
 
 ```
 Data Generator → Files → Airflow → ClickHouse (staging) → dbt → ClickHouse (mart)
