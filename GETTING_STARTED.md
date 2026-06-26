@@ -163,6 +163,5 @@ If generating very large datasets (5+ years with high daily volumes):
 
 - Read the full documentation: `README_DATA_GENERATOR.md`
 - Run smoke test: `python smoke_test.py`
-- Check the spec files: `.kiro/specs/mycola-data-infrastructure/`
 
 **Happy generating!** 🚀
